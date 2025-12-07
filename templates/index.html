@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Server Control Panel</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+    <div class="sidebar">
+        <h2>Control Panel</h2>
+
+        <a href="/start">Start App</a>
+        <a href="/stop">Stop App</a>
+        <a href="/screenshot">Screenshot</a>
+        <a href="/keylogger">Web Keylogger</a>
+        <a href="/webcam">Webcam</a>
+        <a href="/shutdown">Shutdown</a>
+        <a href="/restart">Restart</a>
+    </div>
+
+    <div class="main">
+
+        <h1>{{ title }}</h1>
+
+        <!-- START/STOP APP -->
+        {% if mode == "start" or mode == "stop" %}
+        <form action="/control" method="POST" class="form-box">
+            <label>Select App:</label>
+            <select name="app">
+                <option value="calculator">Calculator</option>
+                <option value="notes">Notes</option>
+                <option value="textedit">TextEdit</option>
+                <option value="safari">Safari</option>
+                <option value="terminal">Terminal</option>
+                <option value="finder">Finder</option>
+                <option value="preview">Preview</option>
+                <option value="messages">Messages</option>
+                <option value="calendar">Calendar</option>
+                <option value="contacts">Contacts</option>
+                <option value="mail">Mail</option>
+            </select>
+
+            <button name="action" value="{{ mode }}">
+                {{ "Start App" if mode=="start" else "Stop App" }}
+            </button>
+        </form>
+        {% endif %}
+
+        <!-- SCREENSHOT -->
+        {% if mode == "screenshot" %}
+        <form action="/control" method="POST">
+            <input type="hidden" name="action" value="screenshot">
+            <button class="danger">Take Screenshot</button>
+        </form>
+        {% endif %}
+
+        {% if mode == "keylogger" %}
+        <h2>Web Keylogger</h2>
+        <p>Hệ thống đang ghi lại tất cả phím bạn nhấn trên trang web này.</p>
+
+        <!-- Thêm id để JS cập nhật -->
+        <pre id="keylog" style="background:#f0f0f0; padding:10px; border-radius:5px; max-height:400px; overflow:auto; color:#ff0000;">
+        [Loading keys...]
+        </pre>
+
+        <script>
+        // Gửi key xuống server khi nhấn phím
+        document.addEventListener("keydown", function(e) {
+            fetch("/logkey_web", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({ key: e.key })
+            });
+        });
+
+        // Hàm fetch dữ liệu keylogger mỗi giây
+        function updateKeylog() {
+            fetch("/keylogger_data")
+                .then(res => res.json())
+                .then(data => {
+                    const pre = document.getElementById("keylog");
+                    pre.textContent = data.keys;
+
+                    // Tự cuộn xuống cuối
+                    pre.scrollTop = pre.scrollHeight;
+                });
+        }
+
+        // Cập nhật liên tục mỗi 30 mili giây
+        setInterval(updateKeylog, 30);
+        updateKeylog();
+        </script>
+        {% endif %}
+
+        <!-- WEBCAM RECORD -->
+        {% if mode == "webcam" %}
+        <h2>Record Webcam</h2>
+
+        <form action="/control" method="POST">
+            <input type="hidden" name="action" value="webcam_record">
+
+            <label>Record Duration:</label>
+            <select name="seconds">
+                <option value="1">Record 1s</option>
+                <option value="2">Record 2s</option>
+                <option value="5">Record 5s</option>
+                <option value="10">Record 10s</option>
+                <option value="20">Record 20s</option>
+                <option value="30">Record 30s</option>
+            </select>
+
+            <button>Start Recording</button>
+        </form>
+        {% endif %}
+
+        <!-- SHUTDOWN -->
+        {% if mode == "shutdown" %}
+        <form action="/control" method="POST">
+            <input type="hidden" name="action" value="shutdown">
+            <button class="danger">Shutdown Now</button>
+        </form>
+        {% endif %}
+
+        <!-- RESTART -->
+        {% if mode == "restart" %}
+        <form action="/control" method="POST">
+            <input type="hidden" name="action" value="restart">
+            <button class="danger">Restart Now</button>
+        </form>
+        {% endif %}
+
+        {% if message %}
+        <div class="msg">{{ message }}</div>
+        {% endif %}
+
+    </div>
+</body>
+</html>
