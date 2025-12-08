@@ -1,18 +1,172 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Server Control Panel</title>
+    <title>Server Control Panel - Christmas Edition</title>
     <link rel="stylesheet" href="/static/style.css">
+    
+    <style>
+        /* --- CHRISTMAS THEME VARIABLES --- */
+        :root {
+            --xmas-red: #c62828;
+            --xmas-green: #2e7d32;
+            --xmas-gold: #fbc02d;
+            --xmas-white: #ffffff;
+            --status-running-bg: #e8f5e9;
+            --status-running-text: #2e7d32;
+            --status-stopped-bg: #eceff1;
+            --status-stopped-text: #78909c;
+        }
+
+        body {
+            background-color: #e3f2fd;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Ctext x='10' y='40' font-size='30'%3E🎄%3C/text%3E%3Ctext x='70' y='40' font-size='30'%3E🎅%3C/text%3E%3Ctext x='40' y='100' font-size='30'%3E❄️%3C/text%3E%3Ctext x='100' y='100' font-size='30'%3E🎁%3C/text%3E%3C/svg%3E");
+            background-size: 120px 120px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow-x: hidden; 
+            display: flex; flex-direction: column; min-height: 100vh;
+        }
+
+        /* TOPBAR & MENU (Giữ nguyên) */
+        .topbar {
+            background: linear-gradient(135deg, #b71c1c 0%, #d32f2f 100%) !important;
+            box-shadow: 0 4px 12px rgba(183, 28, 28, 0.4);
+            border-bottom: 3px solid var(--xmas-gold); 
+            padding: 20px;
+            display: flex; align-items: center; justify-content: space-between;
+            position: relative; z-index: 100;
+        }
+        .topbar h2 { margin: 0; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.2); }
+        .menu a {
+            margin-left: 15px; text-decoration: none; font-weight: bold;
+            color: rgba(255,255,255,0.9) !important; transition: all 0.3s ease;
+            position: relative; background: rgba(0,0,0,0.1); padding: 8px 12px; border-radius: 20px;
+        }
+        .menu a:hover {
+            color: var(--xmas-gold) !important; background: rgba(255,255,255,0.2);
+            transform: translateY(-2px); box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        /* --- TABLE STYLES --- */
+        .table-container {
+            max-height: 600px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+            background: white;
+            scrollbar-width: thin;
+        }
+        .process-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .process-table thead th {
+            background-color: var(--xmas-red); color: white; padding: 15px;
+            position: sticky; top: 0; z-index: 10; text-align: left;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .process-table td {
+            padding: 12px 15px; border-bottom: 1px solid #eee; color: #333;
+            vertical-align: middle;
+        }
+        .process-table tbody tr:hover {
+            background-color: #ffebee; transform: scale(1.002); z-index: 1;
+            position: relative; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        /* --- STATUS BADGES (TRẠNG THÁI) --- */
+        .badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 50px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .badge-running {
+            background-color: var(--status-running-bg);
+            color: var(--status-running-text);
+            border: 1px solid #c8e6c9;
+        }
+        .badge-running::before { content: "● "; color: #43a047; } /* Dấu chấm xanh */
+
+        .badge-stopped {
+            background-color: var(--status-stopped-bg);
+            color: var(--status-stopped-text);
+            border: 1px solid #cfd8dc;
+        }
+        .badge-stopped::before { content: "○ "; }
+
+        /* --- BEAUTIFUL ACTION BUTTONS --- */
+        .btn-action {
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex; align-items: center; justify-content: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            color: white;
+            min-width: 80px;
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #43a047, #2e7d32); /* Gradient Xanh */
+        }
+        .btn-start:hover {
+            background: linear-gradient(135deg, #4caf50, #388e3c);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(46, 125, 50, 0.3);
+        }
+
+        .btn-stop {
+            background: linear-gradient(135deg, #e53935, #c62828); /* Gradient Đỏ */
+        }
+        .btn-stop:hover {
+            background: linear-gradient(135deg, #ef5350, #d32f2f);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(198, 40, 40, 0.3);
+        }
+        
+        /* Disable button if redundant */
+        .btn-disabled {
+            background: #e0e0e0;
+            color: #9e9e9e;
+            cursor: not-allowed;
+            pointer-events: none;
+            box-shadow: none;
+        }
+
+        .action-form { display: inline-block; margin: 0 4px; }
+
+        /* Main, Footer, Snowflake CSS (Giữ nguyên) */
+        .main {
+            margin: 30px auto; width: 90%; max-width: 1200px; padding: 25px;
+            border-top: 5px solid var(--xmas-red); border-radius: 16px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15); 
+            background-color: rgba(255, 255, 255, 0.96); backdrop-filter: blur(10px);
+        }
+        .footer {
+            text-align: center; padding: 20px; margin-top: auto;
+            color: #455a64; font-size: 14px; font-weight: 600;
+            background: rgba(255, 255, 255, 0.8);
+        }
+        .footer a { color: var(--xmas-red); text-decoration: none; font-weight: bold; position: relative; }
+        .footer a:hover::after { content: ''; position: absolute; width: 100%; height: 2px; bottom: -2px; left: 0; background: var(--xmas-gold); }
+        .msg { background: #a5d6a7; padding: 15px; border-left: 5px solid #2e7d32; border-radius: 6px; margin-top: 15px; }
+        
+        .keybox { background: #f1fff0; border: 2px solid #4caf50; padding: 10px; max-height: 400px; overflow-y: auto; color: #006400; }
+        
+        .snowflake { position: fixed; top: -10px; color: #fff; font-size: 1em; text-shadow: 0 0 2px #000; pointer-events: none; animation: fall linear infinite; z-index: 9999;}
+        @keyframes fall { 100% { transform: translateY(100vh) rotate(360deg); opacity: 0.2; } }
+    </style>
 </head>
 <body>
 
-    <!-- TOP NAVBAR -->
     <div class="topbar">
-        <h2>Server Control Panel</h2>
-
+        <h2>🎄 Server Control Panel 🎅</h2>
         <div class="menu">
-            <a href="/start">Start App</a>
-            <a href="/stop">Stop App</a>
+            <a href="/apps">Manage Apps</a>
             <a href="/processes">Processes</a>
             <a href="/screenshot">Screenshot</a>
             <a href="/keylogger">Web Keylogger</a>
@@ -26,120 +180,138 @@
 
         <h1>{{ title }}</h1>
 
-        <!-- START/STOP APP -->
-        {% if mode == "start" or mode == "stop" %}
-        <form action="/control" method="POST" class="form-box">
-            <label>Select App:</label>
-            <select name="app">
-                <option value="calculator">Calculator</option>
-                <option value="notes">Notes</option>
-                <option value="textedit">TextEdit</option>
-                <option value="safari">Safari</option>
-                <option value="terminal">Terminal</option>
-                <option value="finder">Finder</option>
-                <option value="preview">Preview</option>
-                <option value="messages">Messages</option>
-                <option value="calendar">Calendar</option>
-                <option value="contacts">Contacts</option>
-                <option value="mail">Mail</option>
-            </select>
-
-            <button name="action" value="{{ mode }}">
-                {{ "Start App" if mode=="start" else "Stop App" }}
-            </button>
-        </form>
-        {% endif %}
-
-        <!-- PROCESS LIST -->
-        {% if mode == "processes" %}
-        <h2>Running Processes (Top 50 CPU)</h2>
-        <p>Danh sách các tiến trình đang chạy trên Server:</p>
+        {% if mode == "apps" %}
+        <h2 style="color: var(--xmas-green); border-bottom: 2px solid var(--xmas-green); padding-bottom: 10px; display: inline-block;">
+            Installed Applications
+        </h2>
+        <p>Danh sách ứng dụng trên Server. Trạng thái được cập nhật theo thời gian thực.</p>
         
-        <pre class="keybox" style="height: 500px;">{{ process_list }}</pre>
+        <div class="table-container">
+            <table class="process-table">
+                <thead>
+                    <tr>
+                        <th>Tên Ứng Dụng</th>
+                        <th style="width: 150px;">Trạng Thái</th>
+                        <th style="width: 220px; text-align: center;">Điều Khiển</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if app_list %}
+                        {% for key, info in app_list.items() %}
+                            <tr>
+                                <td style="font-weight: 500; font-size: 15px;">{{ info.name }}</td>
+                                
+                                <td>
+                                    {% if info.running %}
+                                        <span class="badge badge-running">Running</span>
+                                    {% else %}
+                                        <span class="badge badge-stopped">Stopped</span>
+                                    {% endif %}
+                                </td>
 
-        <form action="/processes" method="GET">
-            <button>Refresh List</button>
+                                <td style="text-align: center;">
+                                    <form action="/control" method="POST" class="action-form">
+                                        <input type="hidden" name="action" value="start">
+                                        <input type="hidden" name="app" value="{{ key }}">
+                                        <button class="btn-action {{ 'btn-disabled' if info.running else 'btn-start' }}">
+                                            ▶ Start
+                                        </button>
+                                    </form>
+
+                                    <form action="/control" method="POST" class="action-form">
+                                        <input type="hidden" name="action" value="stop">
+                                        <input type="hidden" name="app" value="{{ key }}">
+                                        <button class="btn-action {{ 'btn-stop' if info.running else 'btn-disabled' }} danger">
+                                            ■ Stop
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="3" style="text-align: center; padding: 20px;">
+                                Không tìm thấy ứng dụng nào. Hãy kiểm tra kết nối Server.
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        {% if mode == "processes" %}
+        <h2 style="color: var(--xmas-green);">Running Processes</h2>
+        <div class="table-container">
+            <table class="process-table">
+                <thead><tr><th>PID</th><th>Tên Tiến Trình</th><th>% CPU</th></tr></thead>
+                <tbody>
+                    {% if process_list %}
+                        {% for line in process_list.strip().split('\n')[1:] %}
+                            {% set parts = line.split() %}
+                            {% if parts|length >= 3 %}
+                            <tr>
+                                <td><span style="background:#eee; padding:2px 6px; border-radius:4px;">{{parts[0]}}</span></td>
+                                <td>{{parts[1:-1]|join(' ')}}</td>
+                                <td class="cpu-col">{{parts[-1]}}%</td>
+                            </tr>
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        <form action="/processes" method="GET" style="text-align:right; margin-top:10px;">
+            <button class="refresh-btn" style="padding:10px 20px; border-radius:6px; background:#1565c0; color:white; border:none; cursor:pointer;">🔄 Refresh</button>
         </form>
         {% endif %}
 
-        <!-- SCREENSHOT -->
         {% if mode == "screenshot" %}
         <form action="/control" method="POST">
             <input type="hidden" name="action" value="screenshot">
-            <button class="danger">Take Screenshot</button>
+            <button class="danger" style="padding:10px 20px; background:#c62828; color:white; border:none; border-radius:6px;">Take Screenshot</button>
         </form>
         {% endif %}
 
-        <!-- KEYLOGGER -->
         {% if mode == "keylogger" %}
         <h2>Web Keylogger</h2>
-        <p>Hệ thống đang ghi lại tất cả phím bạn nhấn trên trang web này.</p>
-
-        <pre id="keylog" class="keybox">[Loading keys...]</pre>
-
+        <pre id="keylog" class="keybox">[Loading...]</pre>
         <script>
-        document.addEventListener("keydown", function(e) {
-            fetch("/logkey_web", {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({ key: e.key })
-            });
-        });
-
-        function updateKeylog() {
-            fetch("/keylogger_data")
-                .then(res => res.json())
-                .then(data => {
-                    const pre = document.getElementById("keylog");
-                    pre.textContent = data.keys;
-                    pre.scrollTop = pre.scrollHeight;
-                });
-        }
-
-        setInterval(updateKeylog, 30);
-        updateKeylog();
+        document.addEventListener("keydown", function(e){fetch("/logkey_web",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key:e.key})})});
+        setInterval(()=>{fetch("/keylogger_data").then(r=>r.json()).then(d=>{const p=document.getElementById("keylog");p.textContent=d.keys;p.scrollTop=p.scrollHeight})},30);
         </script>
         {% endif %}
 
-        <!-- WEBCAM -->
         {% if mode == "webcam" %}
         <h2>Record Webcam</h2>
-
         <form action="/control" method="POST">
             <input type="hidden" name="action" value="webcam_record">
-
-            <label>Record Duration:</label>
-            <select name="seconds">
-                <option value="1">Record 1s</option>
-                <option value="2">Record 2s</option>
-                <option value="5">Record 5s</option>
-                <option value="10">Record 10s</option>
-                <option value="20">Record 20s</option>
-                <option value="30">Record 30s</option>
-            </select>
-
-            <button>Start Recording</button>
-        </form>
-        {% endif %}
-
-        {% if mode == "shutdown" %}
-        <form action="/control" method="POST">
-            <input type="hidden" name="action" value="shutdown">
-            <button class="danger">Shutdown Now</button>
-        </form>
-        {% endif %}
-
-        {% if mode == "restart" %}
-        <form action="/control" method="POST">
-            <input type="hidden" name="action" value="restart">
-            <button class="danger">Restart Now</button>
+            <select name="seconds" style="padding:8px;"><option value="2">2s</option><option value="5">5s</option><option value="10">10s</option></select>
+            <button style="margin-left:10px; padding:8px 16px; background:#2e7d32; color:white; border:none; border-radius:4px;">Start</button>
         </form>
         {% endif %}
 
         {% if message %}
         <div class="msg">{{ message }}</div>
         {% endif %}
-
     </div>
+
+    <div class="footer">
+        <a href="https://www.facebook.com/your-facebook-id" target="_blank">Trần Trung Hiếu</a> - 24TNT1 - FIT - HCMUS
+    </div>
+
+    <script>
+        function createSnowflake() {
+            const snowflake = document.createElement('div');
+            snowflake.classList.add('snowflake'); snowflake.textContent = '❄';
+            snowflake.style.left = Math.random() * 100 + 'vw';
+            snowflake.style.fontSize = (Math.random() * 10 + 10) + 'px';
+            snowflake.style.animationDuration = (Math.random() * 5 + 3) + 's';
+            snowflake.style.opacity = Math.random();
+            document.body.appendChild(snowflake);
+            setTimeout(() => { snowflake.remove(); }, 8000);
+        }
+        setInterval(createSnowflake, 300);
+    </script>
 </body>
 </html>

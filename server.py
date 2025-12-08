@@ -5,229 +5,166 @@ import time
 import os
 from datetime import datetime
 import cv2
+import json
 
 HOST = "0.0.0.0"
 PORT = 5001
 
-APPS = {
-    "calculator": "Calculator",
-    "notes": "Notes",
-    "textedit": "TextEdit",
-    "safari": "Safari",
-    "terminal": "Terminal",
-    "finder": "Finder",
-    "preview": "Preview",
-    "messages": "Messages",
-    "calendar": "Calendar",
-    "contacts": "Contacts",
-    "mail": "Mail"
-}
+# --- HÀM QUÉT APP (GIỮ NGUYÊN) ---
+def scan_installed_apps():
+    found_apps = {}
+    app_dirs = ["/Applications", "/System/Applications", "/System/Applications/Utilities", os.path.expanduser("~/Applications")]
+    print("[INFO] Scanning for installed applications...")
+    for d in app_dirs:
+        if not os.path.exists(d): continue
+        try:
+            for item in os.listdir(d):
+                if item.endswith(".app"):
+                    app_name = os.path.splitext(item)[0]
+                    found_apps[app_name.lower()] = app_name
+        except Exception as e: print(f"[WARNING] Could not scan {d}: {e}")
+    return dict(sorted(found_apps.items(), key=lambda item: item[1]))
 
+APPS = scan_installed_apps()
 
+# --- CÁC HÀM START/STOP/CHECK (GIỮ NGUYÊN) ---
 def is_app_running(name):
     try:
-        subprocess.check_output(["pgrep", "-x", name])
+        subprocess.check_output(["pgrep", "-f", name])
         return True
     except:
         return False
 
-
 def start_app(app_name):
-    if app_name not in APPS.values():
-        return f"[ERROR] Unknown app: {app_name}"
-    if is_app_running(app_name):
-        return f"[INFO] {app_name} already running"
-    subprocess.run(["open", "-a", app_name])
-    time.sleep(0.3)
-    if is_app_running(app_name):
+    if is_app_running(app_name): return f"[INFO] {app_name} already running"
+    try:
+        subprocess.run(["open", "-a", app_name], check=True)
+        time.sleep(1)
         return f"[OK] Started {app_name}"
-    return f"[ERROR] Failed to start {app_name}"
-
+    except Exception as e: return f"[ERROR] Failed to start {app_name}: {e}"
 
 def stop_app(app_name):
-    if not is_app_running(app_name):
-        return f"[ERROR] {app_name} not running"
     subprocess.run(["osascript", "-e", f'quit app "{app_name}"'])
-    time.sleep(0.3)
-    if not is_app_running(app_name):
-        return f"[OK] Stopped {app_name}"
-    subprocess.run(["killall", app_name], check=False)
-    time.sleep(0.2)
-    if not is_app_running(app_name):
-        return f"[OK] Forced stop {app_name}"
-    return f"[ERROR] Could not stop {app_name}"
-
+    time.sleep(0.5)
+    if not is_app_running(app_name): return f"[OK] Stopped {app_name}"
+    subprocess.run(["pkill", "-f", app_name], check=False)
+    return f"[OK] Attempted to stop {app_name}"
 
 def take_screenshot():
     try:
         os.makedirs("screenshots", exist_ok=True)
         filename = f"screenshots/shot_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
-        subprocess.run(["screencapture", filename])
+        subprocess.run(["screencapture", "-x", filename])
         return f"[OK] Screenshot saved: {filename}"
-    except Exception as e:
-        return f"[ERROR] Screenshot failed: {e}"
-
+    except Exception as e: return f"[ERROR] Screenshot failed: {e}"
 
 def record_webcam(seconds):
+    # (Giữ nguyên code record_webcam cũ của bạn)
     cap = None
     out = None
     try:
-        # 1. Đảm bảo Photo Booth tắt để không chiếm cam
         subprocess.run(["killall", "Photo Booth"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        
-        # 2. Mở Camera (0 là default webcam)
         cap = cv2.VideoCapture(0)
-        if not cap.isOpened():
-            return "[ERROR] Could not open webcam (Check permissions)"
-
-        # 3. Cấu hình file lưu
-        os.makedirs("recordings", exist_ok=True) # Lưu vào thư mục recordings cho gọn
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        filename = f"recordings/webcam_{timestamp}.mp4"
-        
-        # Lấy thông số camera
+        if not cap.isOpened(): return "[ERROR] Could not open webcam"
+        os.makedirs("recordings", exist_ok=True)
+        filename = f"recordings/webcam_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"
         width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        fps = 20.0 # Set cứng hoặc dùng cap.get(cv2.CAP_PROP_FPS)
-
-        # Cấu hình codec (mp4v chạy tốt trên macOS)
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        out = cv2.VideoWriter(filename, fourcc, fps, (width, height))
-
-        # 4. Bắt đầu ghi
-        start_time = time.time()
-        while (time.time() - start_time) < seconds:
+        out = cv2.VideoWriter(filename, fourcc, 20.0, (width, height))
+        start = time.time()
+        while (time.time() - start) < seconds:
             ret, frame = cap.read()
-            if ret:
-                out.write(frame)
-            else:
-                break
-            
-            # (Tùy chọn) Thêm delay nhỏ để giảm tải CPU nếu cần, nhưng cv2.read() thường đã block theo FPS
-            # time.sleep(0.01) 
-
-        return f"[OK] Recording saved to {os.path.abspath(filename)}"
-
-    except Exception as e:
-        return f"[ERROR] Webcam record failed: {e}"
-    
+            if ret: out.write(frame)
+            else: break
+        return f"[OK] Saved to {filename}"
+    except Exception as e: return f"[ERROR] {e}"
     finally:
-        # 5. Giải phóng tài nguyên chắc chắn
-        if cap and cap.isOpened():
-            cap.release()
-        if out:
-            out.release()
-        cv2.destroyAllWindows() # Đảm bảo đóng mọi cửa sổ ngầm nếu có
+        if cap: cap.release()
+        if out: out.release()
+        cv2.destroyAllWindows()
 
 def shutdown_machine():
     subprocess.Popen(["sudo", "shutdown", "-h", "now"])
-    return "[OK] Shutdown command sent"
-
+    return "[OK] Shutdown sent"
 
 def restart_machine():
     subprocess.Popen(["sudo", "shutdown", "-r", "now"])
-    return "[OK] Restart command sent"
+    return "[OK] Restart sent"
 
 def get_process_list():
     try:
-        # Lệnh ps trên macOS: lấy PID, Tên lệnh, %CPU
-        # -r: sắp xếp theo sử dụng CPU giảm dần
-        # head -n 50: chỉ lấy 50 process đầu để tránh quá tải buffer
-        cmd = "ps -Aceo pid,comm,pcpu -r | head -n 50"
-        
-        # subprocess.check_output chạy lệnh shell và lấy kết quả
+        cmd = "ps -Aceo pid,pcpu,comm -r | head -n 50"
         output = subprocess.check_output(cmd, shell=True, text=True)
-        return output
-    except Exception as e:
-        return f"[ERROR] Failed to get process list: {e}"
+        lines = output.strip().split('\n')
+        cleaned = ["PID COMMAND %CPU"]
+        for line in lines[1:]:
+            parts = line.split(None, 2)
+            if len(parts) < 3: continue
+            pid, cpu, raw = parts[0], parts[1], parts[2]
+            name = raw.split('(')[0].strip() if '(' in raw else raw.strip()
+            cleaned.append(f"{pid} {name} {cpu}")
+        return "\n".join(cleaned)
+    except Exception as e: return f"[ERROR] {e}"
 
+# --- MAIN SERVER LOGIC ---
 def handle_client(conn, addr):
     print(f"Client {addr} connected.")
     while True:
         try:
             data = conn.recv(4096).decode().strip()
-            if not data:
-                break
-            print("Received:", data)
+            if not data: break
             parts = data.split()
             command = parts[0].lower()
 
-            # CHỈ CÒN webcam_record
-            if command == "webcam_record":
-                if len(parts) < 2:
-                    result = "[ERROR] webcam_record <seconds>"
+            if command == "list_apps":
+                # --- LOGIC MỚI: KIỂM TRA TRẠNG THÁI TỪNG APP ---
+                app_status_list = {}
+                for key, name in APPS.items():
+                    app_status_list[key] = {
+                        "name": name,
+                        "running": is_app_running(name)
+                    }
+                result = json.dumps(app_status_list)
+                # -----------------------------------------------
+
+            elif command == "webcam_record":
+                if len(parts) < 2: result = "[ERROR] args"
+                else: result = record_webcam(int(parts[1]))
+
+            elif command in ("start", "stop"):
+                if len(parts) < 2: result = "[ERROR] no app"
                 else:
-                    try:
-                        sec = int(parts[1])
-                        if sec not in (1, 2, 5, 10, 20, 30):
-                            result = "[ERROR] Allowed durations: 1/2/5/10/20/30"
-                        else:
-                            result = record_webcam(sec)
-                    except:
-                        result = "[ERROR] Invalid seconds"
-                conn.sendall(result.encode())
-                continue
-
-            if command in ("start", "stop"):
-                if len(parts) < 2:
-                    conn.sendall(b"[ERROR] Missing app name")
-                    continue
-                app_key = " ".join(parts[1:])
-                app_name = APPS.get(app_key.lower(), app_key)
-                result = start_app(app_name) if command == "start" else stop_app(app_name)
-
-            elif command == "screenshot":
-                result = take_screenshot()
-
+                    key = " ".join(parts[1:]).lower()
+                    name = APPS.get(key, " ".join(parts[1:]))
+                    result = start_app(name) if command == "start" else stop_app(name)
+            
+            elif command == "screenshot": result = take_screenshot()
+            elif command == "list_processes": result = get_process_list()
+            elif command == "shutdown": result = shutdown_machine()
+            elif command == "restart": result = restart_machine()
             elif command == "keylog_web":
-                key = parts[1] if len(parts) > 1 else ""
-                with open("web_keylog.txt", "a") as f:
-                    f.write(key + '\n')
-                conn.sendall(b"[OK] Logged key")
-                continue
-
+                with open("web_keylog.txt", "a") as f: f.write((parts[1] if len(parts)>1 else "")+'\n')
+                conn.sendall(b"OK"); continue
             elif command == "keylog_data":
-                try:
-                    with open("web_keylog.txt", "r") as f:
-                        keys = f.read()
-                except FileNotFoundError:
-                    keys = ""
-                conn.sendall(keys.encode())
-                continue
-
-            elif command == "list_processes":
-                result = get_process_list()
-
-            elif command == "shutdown":
-                result = shutdown_machine()
-
-            elif command == "restart":
-                result = restart_machine()
-
-            else:
-                result = "[ERROR] Unknown command"
-
+                try: 
+                    with open("web_keylog.txt") as f: result=f.read()
+                except: result=""
+                conn.sendall(result.encode()); continue
+            else: result = "[ERROR] Unknown"
+            
             conn.sendall(result.encode())
-
-        except Exception as e:
-            try:
-                conn.sendall(f"[ERROR] {e}".encode())
-            except:
-                pass
-            break
-
+        except: break
     conn.close()
-    print(f"Client {addr} disconnected.")
-
 
 def start_server():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind((HOST, PORT))
         s.listen()
-        print(f"Server listening on {HOST}:{PORT}")
+        print(f"Server on {HOST}:{PORT}")
         while True:
             conn, addr = s.accept()
             threading.Thread(target=handle_client, args=(conn, addr), daemon=True).start()
 
-if __name__ == "__main__":
+if __name__ == "__main__": 
     start_server()

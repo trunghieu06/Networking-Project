@@ -2,6 +2,7 @@ from flask import Flask, render_template, request
 import socket
 from flask import jsonify
 import os
+import json # <--- THÊM IMPORT JSON
 
 TCP_SERVER_IP = "127.0.0.1"
 TCP_PORT = 5001
@@ -13,11 +14,21 @@ def send_tcp_command(cmd):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.connect((TCP_SERVER_IP, TCP_PORT))
             s.sendall(cmd.encode())
-            # Tăng buffer lên 16384 bytes để chứa đủ danh sách process
             result = s.recv(16384).decode() 
         return result
     except Exception as e:
         return f"[ERROR] {e}"
+
+# --- HÀM MỚI ĐỂ LẤY DANH SÁCH APP ---
+def get_remote_apps():
+    try:
+        response = send_tcp_command("list_apps")
+        # Nếu server trả về lỗi hoặc chuỗi không phải JSON
+        if response.startswith("[ERROR]"):
+            return {}
+        return json.loads(response)
+    except:
+        return {}
 
 @app.route("/")
 def home():
@@ -25,11 +36,21 @@ def home():
 
 @app.route("/start")
 def start_page():
-    return render_template("index.html", title="Start Application", mode="start")
+    # Lấy danh sách app từ server
+    app_list = get_remote_apps()
+    return render_template("index.html", title="Start Application", mode="start", app_list=app_list)
 
 @app.route("/stop")
 def stop_page():
-    return render_template("index.html", title="Stop Application", mode="stop")
+    # Lấy danh sách app từ server
+    app_list = get_remote_apps()
+    return render_template("index.html", title="Stop Application", mode="stop", app_list=app_list)
+
+@app.route("/apps")
+def manage_apps_page():
+    # Lấy danh sách app từ server
+    app_list = get_remote_apps()
+    return render_template("index.html", title="Application Manager", mode="apps", app_list=app_list)
 
 @app.route("/screenshot")
 def screenshot_page():
@@ -49,22 +70,18 @@ def restart_page():
 
 @app.route("/processes")
 def processes_page():
-    # Gửi lệnh ngay khi vào trang để lấy dữ liệu
     process_data = send_tcp_command("list_processes")
     return render_template("index.html", title="Task Manager", mode="processes", process_list=process_data)
 
 @app.route("/keylogger")
 def keylogger_page():
-    # Xóa file keylogger nếu tồn tại
     try:
         os.remove("web_keylog.txt")
     except FileNotFoundError:
         pass
-
-    keys = "[No keys logged yet]"  # Khi mới mở tab thì rỗng
+    keys = "[No keys logged yet]"
     return render_template("index.html", title="Keylogger", mode="keylogger", keys=keys)
 
-# 🔥 NEW: API trả nội dung keylogger cho AJAX
 @app.route("/keylogger_data")
 def keylogger_data():
     try:
@@ -74,29 +91,26 @@ def keylogger_data():
         keys = ""
     return jsonify({"keys": keys})
 
-# 🔥 NEW: API nhận key gửi từ frontend
 @app.route("/logkey_web", methods=["POST"])
 def logkey_web():
     key = request.json.get("key")
     if not key:
         return jsonify({"status": "error"})
-
-    # Gửi xuống TCP server dạng: keylog_web <key>
     send_tcp_command(f"keylog_web {key}")
-
     return jsonify({"status": "ok"})
 
 @app.route("/control", methods=["POST"])
 def control_action():
     action = request.form.get("action")
     app_name = request.form.get("app")
-    seconds = request.form.get("seconds")  # chỉ cần cho record
+    seconds = request.form.get("seconds") 
 
-    # build command to send to TCP server
     if action in ("start", "stop"):
         if not app_name:
             msg = "[ERROR] Missing app name"
-            return render_template("index.html", title="Error", message=msg)
+            # Khi render lỗi, ta cũng cần truyền lại app_list để dropdown không bị trống
+            app_list = get_remote_apps()
+            return render_template("index.html", title="Error", message=msg, mode=action, app_list=app_list)
         command = f"{action} {app_name}"
 
     elif action == "screenshot":
@@ -118,7 +132,14 @@ def control_action():
         return render_template("index.html", title="Error", message=f"[ERROR] Unknown action {action}")
 
     result = send_tcp_command(command)
-    return render_template("index.html", title="Result", message=result, mode=None)
+    
+    # Sau khi thực hiện start/stop, ta vẫn ở màn hình đó, nên cần load lại list
+    app_list = {}
+    if action in ("start", "stop"):
+        app_list = get_remote_apps()
+        
+    # Giữ nguyên mode để user thấy kết quả ngay tại màn hình đó
+    return render_template("index.html", title="Result", message=result, mode=action, app_list=app_list)
 
 
 if __name__ == "__main__":
