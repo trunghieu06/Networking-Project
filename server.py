@@ -128,6 +128,18 @@ def restart_machine():
     subprocess.Popen(["sudo", "shutdown", "-r", "now"])
     return "[OK] Restart command sent"
 
+def get_process_list():
+    try:
+        # Lệnh ps trên macOS: lấy PID, Tên lệnh, %CPU
+        # -r: sắp xếp theo sử dụng CPU giảm dần
+        # head -n 50: chỉ lấy 50 process đầu để tránh quá tải buffer
+        cmd = "ps -Aceo pid,comm,pcpu -r | head -n 50"
+        
+        # subprocess.check_output chạy lệnh shell và lấy kết quả
+        output = subprocess.check_output(cmd, shell=True, text=True)
+        return output
+    except Exception as e:
+        return f"[ERROR] Failed to get process list: {e}"
 
 def handle_client(conn, addr):
     print(f"Client {addr} connected.")
@@ -183,6 +195,8 @@ def handle_client(conn, addr):
                 conn.sendall(keys.encode())
                 continue
 
+            elif command == "list_processes":
+                result = get_process_list()
 
             elif command == "shutdown":
                 result = shutdown_machine()

