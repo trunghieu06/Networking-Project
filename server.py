@@ -57,28 +57,65 @@ def take_screenshot():
         subprocess.run(["screencapture", "-x", filename])
         return f"[OK] Screenshot saved: {filename}"
     except Exception as e: return f"[ERROR] Screenshot failed: {e}"
-
 def record_webcam(seconds):
-    # (Giữ nguyên code record_webcam cũ của bạn)
     cap = None
     out = None
     try:
+        # 1. Tắt Photo Booth để tránh xung đột
         subprocess.run(["killall", "Photo Booth"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        cap = cv2.VideoCapture(0)
-        if not cap.isOpened(): return "[ERROR] Could not open webcam"
+        
+        # 2. Mở Camera
+        cap = cv2.VideoCapture(1)
+        # Đợi một chút để camera khởi động
+        time.sleep(1.0) 
+
+        if not cap.isOpened():
+            return "[ERROR] Could not open webcam (Check permissions)"
+
+        # 3. ĐỌC THỬ 1 FRAME ĐỂ KIỂM TRA & LẤY KÍCH THƯỚC THỰC
+        ret, frame = cap.read()
+        if not ret:
+            return "[ERROR] Cannot read frame. Check Privacy Settings -> Camera."
+        
+        # Lấy kích thước CHÍNH XÁC từ frame vừa đọc được
+        height, width, layers = frame.shape
+        print(f"[INFO] Camera init: {width}x{height}")
+
+        # 4. Cấu hình file lưu
         os.makedirs("recordings", exist_ok=True)
         filename = f"recordings/webcam_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"
-        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        
+        # Codec 'avc1' (H.264) thường tương thích tốt hơn trên macOS so với 'mp4v'
+        fourcc = cv2.VideoWriter_fourcc(*'avc1') 
         out = cv2.VideoWriter(filename, fourcc, 20.0, (width, height))
-        start = time.time()
-        while (time.time() - start) < seconds:
+        
+        if not out.isOpened():
+            return "[ERROR] Could not init VideoWriter"
+
+        # 5. Bắt đầu ghi
+        print(f"[INFO] Recording for {seconds} seconds...")
+        start_time = time.time()
+        frame_count = 0
+        
+        while (time.time() - start_time) < seconds:
             ret, frame = cap.read()
-            if ret: out.write(frame)
-            else: break
-        return f"[OK] Saved to {filename}"
-    except Exception as e: return f"[ERROR] {e}"
+            if ret:
+                out.write(frame)
+                frame_count += 1
+            else:
+                print("[WARNING] Missed a frame")
+                time.sleep(0.01) # Tránh treo CPU nếu mất kết nối cam
+
+        print(f"[INFO] Finished. Frames written: {frame_count}")
+        
+        if frame_count == 0:
+            return "[ERROR] No frames captured (File empty)"
+
+        return f"[OK] Saved to {os.path.abspath(filename)}"
+
+    except Exception as e:
+        return f"[ERROR] Webcam record failed: {e}"
+    
     finally:
         if cap: cap.release()
         if out: out.release()

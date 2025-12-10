@@ -120,6 +120,15 @@ def control_action():
             return jsonify({"status": "error", "message": "[ERROR] Missing app name"})
         command = f"{action} {app_name}"
 
+    elif action == "webcam_record":
+        # Kiểm tra seconds có hợp lệ không
+        if not seconds or not str(seconds).isdigit():
+            msg = "[ERROR] Invalid seconds"
+            if request.is_json: 
+                return jsonify({"status": "error", "message": msg})
+            return render_template("index.html", title="Error", message=msg)
+        command = f"webcam_record {seconds}"
+
     elif action == "screenshot":
         command = "screenshot"
     
