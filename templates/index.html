@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Server Control Panel - Christmas Edition</title>
+    <title>Networking Project - Trần Trung Hiếu</title>
     <link rel="stylesheet" href="/static/style.css">
     
     <style>
@@ -26,7 +26,7 @@
             display: flex; flex-direction: column; min-height: 100vh;
         }
 
-        /* TOPBAR & MENU (Giữ nguyên) */
+        /* TOPBAR & MENU */
         .topbar {
             background: linear-gradient(135deg, #b71c1c 0%, #d32f2f 100%) !important;
             box-shadow: 0 4px 12px rgba(183, 28, 28, 0.4);
@@ -37,7 +37,7 @@
         }
         .topbar h2 { margin: 0; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.2); }
         .menu a {
-            margin-left: 15px; text-decoration: none; font-weight: bold;
+            margin-left: 10px; text-decoration: none; font-weight: bold; font-size: 14px;
             color: rgba(255,255,255,0.9) !important; transition: all 0.3s ease;
             position: relative; background: rgba(0,0,0,0.1); padding: 8px 12px; border-radius: 20px;
         }
@@ -46,118 +46,78 @@
             transform: translateY(-2px); box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
 
-        /* --- TABLE STYLES --- */
-        .table-container {
-            max-height: 600px;
-            overflow-y: auto;
-            border: 1px solid #e0e0e0;
-            border-radius: 12px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-            background: white;
-            scrollbar-width: thin;
+        /* --- STYLES CHO TRANG HOME (INTRO) --- */
+        .intro-card {
+            text-align: center;
+            padding: 40px;
+            border: 2px dashed var(--xmas-red);
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
-        .process-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        .process-table thead th {
-            background-color: var(--xmas-red); color: white; padding: 15px;
-            position: sticky; top: 0; z-index: 10; text-align: left;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        .intro-title {
+            color: var(--xmas-red);
+            font-size: 2.5em;
+            margin-bottom: 5px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
         }
-        .process-table td {
-            padding: 12px 15px; border-bottom: 1px solid #eee; color: #333;
-            vertical-align: middle;
-        }
-        .process-table tbody tr:hover {
-            background-color: #ffebee; transform: scale(1.002); z-index: 1;
-            position: relative; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        /* --- STATUS BADGES (TRẠNG THÁI) --- */
-        .badge {
-            display: inline-block;
-            padding: 6px 12px;
-            border-radius: 50px;
-            font-size: 12px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .badge-running {
-            background-color: var(--status-running-bg);
-            color: var(--status-running-text);
-            border: 1px solid #c8e6c9;
-        }
-        .badge-running::before { content: "● "; color: #43a047; } /* Dấu chấm xanh */
-
-        .badge-stopped {
-            background-color: var(--status-stopped-bg);
-            color: var(--status-stopped-text);
-            border: 1px solid #cfd8dc;
-        }
-        .badge-stopped::before { content: "○ "; }
-
-        /* --- BEAUTIFUL ACTION BUTTONS --- */
-        .btn-action {
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
+        .intro-subtitle {
+            color: var(--xmas-green);
+            font-size: 1.4em;
+            margin-bottom: 30px;
             font-weight: 600;
-            font-size: 13px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: inline-flex; align-items: center; justify-content: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            color: white;
-            min-width: 80px;
         }
-
-        .btn-start {
-            background: linear-gradient(135deg, #43a047, #2e7d32); /* Gradient Xanh */
+        .info-box {
+            display: inline-block;
+            text-align: left;
+            background: #e8f5e9;
+            padding: 20px 30px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            border-left: 5px solid var(--xmas-green);
+            vertical-align: top;
+            margin-right: 20px;
         }
-        .btn-start:hover {
-            background: linear-gradient(135deg, #4caf50, #388e3c);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(46, 125, 50, 0.3);
-        }
-
-        .btn-stop {
-            background: linear-gradient(135deg, #e53935, #c62828); /* Gradient Đỏ */
-        }
-        .btn-stop:hover {
-            background: linear-gradient(135deg, #ef5350, #d32f2f);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(198, 40, 40, 0.3);
-        }
+        .info-box p { margin: 8px 0; font-size: 1.1em; color: #37474f; }
+        .info-box strong { color: var(--xmas-red); width: 100px; display: inline-block; }
         
-        /* Disable button if redundant */
-        .btn-disabled {
-            background: #e0e0e0;
-            color: #9e9e9e;
-            cursor: not-allowed;
-            pointer-events: none;
-            box-shadow: none;
+        .feature-box {
+            display: inline-block;
+            text-align: left;
+            background: #fffde7;
+            padding: 20px 30px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            border-left: 5px solid var(--xmas-gold);
+            vertical-align: top;
+            max-width: 500px;
         }
+        .feature-box h3 { margin-top: 0; color: #f57f17; border-bottom: 2px solid #fbc02d; padding-bottom: 10px; font-size: 1.2em;}
+        .feature-list { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .feature-list li { color: #555; font-weight: 500; font-size: 0.95em; }
+        .feature-list li::before { content: "✅ "; }
 
-        .action-form { display: inline-block; margin: 0 4px; }
+        .school-logo { font-size: 4em; margin-bottom: 20px; display: block; }
 
-        /* Main, Footer, Snowflake CSS (Giữ nguyên) */
-        .main {
-            margin: 30px auto; width: 90%; max-width: 1200px; padding: 25px;
-            border-top: 5px solid var(--xmas-red); border-radius: 16px;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.15); 
-            background-color: rgba(255, 255, 255, 0.96); backdrop-filter: blur(10px);
-        }
-        .footer {
-            text-align: center; padding: 20px; margin-top: auto;
-            color: #455a64; font-size: 14px; font-weight: 600;
-            background: rgba(255, 255, 255, 0.8);
-        }
-        .footer a { color: var(--xmas-red); text-decoration: none; font-weight: bold; position: relative; }
-        .footer a:hover::after { content: ''; position: absolute; width: 100%; height: 2px; bottom: -2px; left: 0; background: var(--xmas-gold); }
+        /* ... (Giữ nguyên CSS cũ cho table, button, v.v.) ... */
+        .table-container { max-height: 600px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 12px; background: white; }
+        .process-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .process-table th { background-color: var(--xmas-red); color: white; padding: 15px; position: sticky; top: 0; z-index: 10;}
+        .process-table td { padding: 12px 15px; border-bottom: 1px solid #eee; }
+        .badge { padding: 6px 12px; border-radius: 50px; font-weight: 700; font-size: 12px; text-transform: uppercase; }
+        .badge-running { background: var(--status-running-bg); color: var(--status-running-text); border: 1px solid #c8e6c9; }
+        .badge-stopped { background: var(--status-stopped-bg); color: var(--status-stopped-text); border: 1px solid #cfd8dc; }
+        
+        .btn-action { border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; color: white; margin: 0 2px; }
+        .btn-start { background: linear-gradient(135deg, #43a047, #2e7d32); }
+        .btn-stop, .danger { background: linear-gradient(135deg, #e53935, #c62828); }
+        .btn-disabled { background: #e0e0e0; color: #9e9e9e; cursor: not-allowed; }
+
+        .main { margin: 30px auto; width: 90%; max-width: 1200px; padding: 25px; border-top: 5px solid var(--xmas-red); border-radius: 16px; background: rgba(255, 255, 255, 0.96); box-shadow: 0 15px 40px rgba(0,0,0,0.15); }
+        .footer { text-align: center; padding: 20px; margin-top: auto; color: #455a64; background: rgba(255, 255, 255, 0.8); }
         .msg { background: #a5d6a7; padding: 15px; border-left: 5px solid #2e7d32; border-radius: 6px; margin-top: 15px; }
-        
         .keybox { background: #f1fff0; border: 2px solid #4caf50; padding: 10px; max-height: 400px; overflow-y: auto; color: #006400; }
-        
-        .snowflake { position: fixed; top: -10px; color: #fff; font-size: 1em; text-shadow: 0 0 2px #000; pointer-events: none; animation: fall linear infinite; z-index: 9999;}
+        .snowflake { position: fixed; top: -10px; color: #fff; pointer-events: none; animation: fall linear infinite; z-index: 9999;}
         @keyframes fall { 100% { transform: translateY(100vh) rotate(360deg); opacity: 0.2; } }
     </style>
 </head>
@@ -166,10 +126,11 @@
     <div class="topbar">
         <h2>🎄 Server Control Panel 🎅</h2>
         <div class="menu">
+            <a href="/" style="background: rgba(255,255,255,0.3);">🏠 Trang Chủ</a>
             <a href="/apps">Manage Apps</a>
             <a href="/processes">Processes</a>
             <a href="/screenshot">Screenshot</a>
-            <a href="/keylogger">Web Keylogger</a>
+            <a href="/keylogger">Keylogger</a>
             <a href="/webcam">Webcam</a>
             <a href="/shutdown">Shutdown</a>
             <a href="/restart">Restart</a>
@@ -178,62 +139,68 @@
 
     <div class="main">
 
-        <h1>{{ title }}</h1>
+        {% if not mode or mode == 'home' %}
+        <div class="intro-card">
+            <div class="school-logo">🏛️ 💻</div>
+            <h1 class="intro-title">Đồ Án Mạng Máy Tính</h1>
+            <h3 class="intro-subtitle">Hệ Thống Điều Khiển & Giám Sát Từ Xa</h3>
+            
+            <div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 20px;">
+                <div class="info-box">
+                    <p><strong>Sinh viên:</strong> Trần Trung Hiếu</p>
+                    <p><strong>Lớp:</strong> 24TNT1</p>
+                    <p><strong>Khoa:</strong> Công nghệ Thông tin</p>
+                    <p><strong>Trường:</strong> ĐH KHTN, ĐHQG-HCM</p>
+                </div>
+
+                <div class="feature-box">
+                    <h3>🌟 Các Chức Năng Chính</h3>
+                    <ul class="feature-list">
+                        <li>List / Start / Stop App</li>
+                        <li>Take Screenshot</li>
+                        <li>Web Keylogger</li>
+                        <li>Webcam Control</li>
+                        <li>Shutdown / Restart Máy</li>
+                        <li>TCP Connection (Socket)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div style="margin-top: 40px;">
+                <p style="font-style: italic; color: #555; margin-bottom: 20px;">
+                    "Merry Christmas! Chúc thầy và các bạn một mùa Giáng sinh an lành!" 🎄🎁
+                </p>
+                <a href="/apps" class="btn-action btn-start" style="text-decoration: none; padding: 12px 25px; font-size: 16px;">
+                    🚀 Bắt đầu quản lý
+                </a>
+            </div>
+        </div>
+        {% else %}
+            <h1>{{ title }}</h1>
+        {% endif %}
 
         {% if mode == "apps" %}
-        <h2 style="color: var(--xmas-green); border-bottom: 2px solid var(--xmas-green); padding-bottom: 10px; display: inline-block;">
-            Installed Applications
-        </h2>
-        <p>Danh sách ứng dụng trên Server. Trạng thái được cập nhật theo thời gian thực.</p>
-        
+        <h2 style="color: var(--xmas-green); border-bottom: 2px solid var(--xmas-green); padding-bottom: 10px;">Installed Applications</h2>
         <div class="table-container">
             <table class="process-table">
-                <thead>
-                    <tr>
-                        <th>Tên Ứng Dụng</th>
-                        <th style="width: 150px;">Trạng Thái</th>
-                        <th style="width: 220px; text-align: center;">Điều Khiển</th>
-                    </tr>
-                </thead>
+                <thead><tr><th>Tên Ứng Dụng</th><th style="width: 150px;">Trạng Thái</th><th style="width: 220px; text-align: center;">Điều Khiển</th></tr></thead>
                 <tbody>
                     {% if app_list %}
                         {% for key, info in app_list.items() %}
-                            <tr>
-                                <td style="font-weight: 500; font-size: 15px;">{{ info.name }}</td>
-                                
-                                <td>
-                                    {% if info.running %}
-                                        <span class="badge badge-running">Running</span>
-                                    {% else %}
-                                        <span class="badge badge-stopped">Stopped</span>
-                                    {% endif %}
-                                </td>
-
-                                <td style="text-align: center;">
-                                    <form action="/control" method="POST" class="action-form">
-                                        <input type="hidden" name="action" value="start">
-                                        <input type="hidden" name="app" value="{{ key }}">
-                                        <button class="btn-action {{ 'btn-disabled' if info.running else 'btn-start' }}">
-                                            ▶ Start
-                                        </button>
-                                    </form>
-
-                                    <form action="/control" method="POST" class="action-form">
-                                        <input type="hidden" name="action" value="stop">
-                                        <input type="hidden" name="app" value="{{ key }}">
-                                        <button class="btn-action {{ 'btn-stop' if info.running else 'btn-disabled' }} danger">
-                                            ■ Stop
-                                        </button>
-                                    </form>
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    {% else %}
                         <tr>
-                            <td colspan="3" style="text-align: center; padding: 20px;">
-                                Không tìm thấy ứng dụng nào. Hãy kiểm tra kết nối Server.
+                            <td style="font-weight: 500;">{{ info.name }}</td>
+                            <td>
+                                {% if info.running %} <span class="badge badge-running">Running</span>
+                                {% else %} <span class="badge badge-stopped">Stopped</span> {% endif %}
+                            </td>
+                            <td style="text-align: center;">
+                                <button onclick="controlApp('start', '{{ key }}')" class="btn-action {{ 'btn-disabled' if info.running else 'btn-start' }}">▶ Start</button>
+                                <button onclick="controlApp('stop', '{{ key }}')" class="btn-action {{ 'btn-stop' if info.running else 'btn-disabled' }} danger">■ Stop</button>
                             </td>
                         </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr><td colspan="3" style="text-align: center; padding: 20px;">Không tìm thấy ứng dụng.</td></tr>
                     {% endif %}
                 </tbody>
             </table>
@@ -253,7 +220,7 @@
                             <tr>
                                 <td><span style="background:#eee; padding:2px 6px; border-radius:4px;">{{parts[0]}}</span></td>
                                 <td>{{parts[1:-1]|join(' ')}}</td>
-                                <td class="cpu-col">{{parts[-1]}}%</td>
+                                <td>{{parts[-1]}}%</td>
                             </tr>
                             {% endif %}
                         {% endfor %}
@@ -262,23 +229,22 @@
             </table>
         </div>
         <form action="/processes" method="GET" style="text-align:right; margin-top:10px;">
-            <button class="refresh-btn" style="padding:10px 20px; border-radius:6px; background:#1565c0; color:white; border:none; cursor:pointer;">🔄 Refresh</button>
+            <button class="btn-action" style="background:#1565c0;">🔄 Refresh</button>
         </form>
         {% endif %}
 
         {% if mode == "screenshot" %}
-        <form action="/control" method="POST">
-            <input type="hidden" name="action" value="screenshot">
-            <button class="danger" style="padding:10px 20px; background:#c62828; color:white; border:none; border-radius:6px;">Take Screenshot</button>
-        </form>
+        <div style="text-align: center; padding: 30px;">
+            <button onclick="controlApp('screenshot', 'sys')" class="danger" style="padding:15px 30px; font-size: 16px;">📸 Take Screenshot</button>
+        </div>
         {% endif %}
 
         {% if mode == "keylogger" %}
         <h2>Web Keylogger</h2>
         <pre id="keylog" class="keybox">[Loading...]</pre>
         <script>
-        document.addEventListener("keydown", function(e){fetch("/logkey_web",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key:e.key})})});
-        setInterval(()=>{fetch("/keylogger_data").then(r=>r.json()).then(d=>{const p=document.getElementById("keylog");p.textContent=d.keys;p.scrollTop=p.scrollHeight})},30);
+            document.addEventListener("keydown", function(e){fetch("/logkey_web",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key:e.key})})});
+            setInterval(()=>{fetch("/keylogger_data").then(r=>r.json()).then(d=>{const p=document.getElementById("keylog");p.textContent=d.keys;p.scrollTop=p.scrollHeight})},30);
         </script>
         {% endif %}
 
@@ -287,8 +253,22 @@
         <form action="/control" method="POST">
             <input type="hidden" name="action" value="webcam_record">
             <select name="seconds" style="padding:8px;"><option value="2">2s</option><option value="5">5s</option><option value="10">10s</option></select>
-            <button style="margin-left:10px; padding:8px 16px; background:#2e7d32; color:white; border:none; border-radius:4px;">Start</button>
+            <button class="btn-action btn-start" style="margin-left:10px;">Start</button>
         </form>
+        {% endif %}
+
+        {% if mode == "shutdown" %}
+        <div style="text-align: center; padding: 40px; border: 2px dashed var(--xmas-red); border-radius: 10px; background: #ffebee;">
+            <h2 style="color: var(--xmas-red);">⚠️ Shutdown Server</h2>
+            <button onclick="controlApp('shutdown', 'system')" class="danger" style="padding: 15px 30px; font-size: 18px;">🛑 Confirm Shutdown</button>
+        </div>
+        {% endif %}
+
+        {% if mode == "restart" %}
+        <div style="text-align: center; padding: 40px; border: 2px dashed var(--xmas-gold); border-radius: 10px; background: #fffde7;">
+            <h2 style="color: #f9a825;">🔄 Restart Server</h2>
+            <button onclick="controlApp('restart', 'system')" style="padding: 15px 30px; font-size: 18px; background: #fbc02d; color: #3e2723; border: none; font-weight: bold; cursor:pointer;">🔄 Confirm Restart</button>
+        </div>
         {% endif %}
 
         {% if message %}
@@ -297,10 +277,24 @@
     </div>
 
     <div class="footer">
-        <a href="https://www.facebook.com/your-facebook-id" target="_blank">Trần Trung Hiếu</a> - 24TNT1 - FIT - HCMUS
+        Trần Trung Hiếu - 24TNT1 - Khoa CNTT - ĐH KHTN ĐHQG-HCM
     </div>
 
     <script>
+        function controlApp(action, appName) {
+            fetch('/control', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({action: action, app: appName})
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message); 
+                if (action !== 'shutdown' && action !== 'restart') location.reload(); 
+            })
+            .catch(error => { console.error(error); alert("Connection Error!"); });
+        }
+
         function createSnowflake() {
             const snowflake = document.createElement('div');
             snowflake.classList.add('snowflake'); snowflake.textContent = '❄';
