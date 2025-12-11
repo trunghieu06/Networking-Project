@@ -6,15 +6,59 @@ import os
 from datetime import datetime
 import cv2
 import json
+import struct 
+from PIL import ImageGrab
+import io
+import numpy as np
 
 HOST = "0.0.0.0"
 PORT = 5001
 
-# --- HÀM QUÉT APP (GIỮ NGUYÊN) ---
+# --- BIẾN TOÀN CỤC CHO CAMERA ---
+global_cap = None
+global_frame = None
+camera_lock = threading.Lock()
+is_camera_running = True
+
+# --- HÀM CHẠY NGẦM: ĐỌC CAMERA LIÊN TỤC ---
+def camera_loop():
+    global global_cap, global_frame
+    
+    # 1. Mở camera (Thử index 0 hoặc 1 nếu dùng iPhone continuity)
+    # Tăng độ phân giải lên HD
+    cap = cv2.VideoCapture(0)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+    
+    # Chỉnh FPS (nếu camera hỗ trợ)
+    cap.set(cv2.CAP_PROP_FPS, 30)
+
+    if not cap.isOpened():
+        print("[WARNING] Could not open Global Camera thread.")
+        return
+
+    global_cap = cap
+    print("[INFO] Global Camera started (HD mode).")
+
+    while is_camera_running:
+        ret, frame = cap.read()
+        if ret:
+            with camera_lock:
+                global_frame = frame
+        else:
+            time.sleep(0.1)
+    
+    cap.release()
+    print("[INFO] Global Camera stopped.")
+
+# Khởi động luồng camera ngay khi chạy server
+threading.Thread(target=camera_loop, daemon=True).start()
+
+
+# --- HÀM QUÉT APP ---
 def scan_installed_apps():
     found_apps = {}
     app_dirs = ["/Applications", "/System/Applications", "/System/Applications/Utilities", os.path.expanduser("~/Applications")]
-    print("[INFO] Scanning for installed applications...")
     for d in app_dirs:
         if not os.path.exists(d): continue
         try:
@@ -22,12 +66,12 @@ def scan_installed_apps():
                 if item.endswith(".app"):
                     app_name = os.path.splitext(item)[0]
                     found_apps[app_name.lower()] = app_name
-        except Exception as e: print(f"[WARNING] Could not scan {d}: {e}")
+        except: pass
     return dict(sorted(found_apps.items(), key=lambda item: item[1]))
 
 APPS = scan_installed_apps()
 
-# --- CÁC HÀM START/STOP/CHECK (GIỮ NGUYÊN) ---
+# --- CÁC HÀM START/STOP/CHECK ---
 def is_app_running(name):
     try:
         subprocess.check_output(["pgrep", "-f", name])
@@ -50,66 +94,80 @@ def stop_app(app_name):
     subprocess.run(["pkill", "-f", app_name], check=False)
     return f"[OK] Attempted to stop {app_name}"
 
+# --- HÀM CHỤP MÀN HÌNH STREAM ---
+def capture_screen_bytes():
+    try:
+        img = ImageGrab.grab()
+        
+        # --- THÊM DÒNG NÀY ĐỂ SỬA LỖI ---
+        # Chuyển đổi từ RGBA (có độ trong suốt) sang RGB (chỉ màu sắc)
+        img = img.convert("RGB") 
+        # -------------------------------
+
+        # Resize nhẹ để giảm lag mạng (nhưng vẫn giữ độ nét tương đối)
+        img.thumbnail((1600, 900)) 
+        
+        img_byte_arr = io.BytesIO()
+        # Tăng chất lượng JPEG lên 80
+        img.save(img_byte_arr, format='JPEG', quality=80)
+        return img_byte_arr.getvalue()
+    except Exception as e:
+        print(f"[ERROR] Screen capture: {e}")
+        return None
+
+# --- HÀM LẤY ẢNH TỪ GLOBAL CAMERA ---
+def capture_webcam_bytes():
+    with camera_lock:
+        if global_frame is None:
+            return None
+        # Copy frame để tránh conflict khi đang encode
+        frame_copy = global_frame.copy()
+    
+    try:
+        # Nén JPEG với chất lượng cao (90)
+        # Gửi màu gốc (không bị trắng đen)
+        _, buffer = cv2.imencode('.jpg', frame_copy, [int(cv2.IMWRITE_JPEG_QUALITY), 90])
+        return buffer.tobytes()
+    except Exception as e:
+        print(f"[ERROR] Webcam encode: {e}")
+        return None
+
+# --- CÁC HÀM KHÁC ---
 def take_screenshot():
     try:
         os.makedirs("screenshots", exist_ok=True)
         filename = f"screenshots/shot_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
         subprocess.run(["screencapture", "-x", filename])
         return f"[OK] Screenshot saved: {filename}"
-    except Exception as e: return f"[ERROR] Screenshot failed: {e}"
+    except Exception as e: return f"[ERROR] {e}"
+
 def record_webcam(seconds):
-    cap = None
+    # LƯU Ý: Khi dùng Global Camera, hàm này cần mượn frame từ global
+    # thay vì mở lại VideoCapture(0) (sẽ gây lỗi conflict thiết bị)
+    
     out = None
     try:
-        # 1. Tắt Photo Booth để tránh xung đột
-        subprocess.run(["killall", "Photo Booth"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        
-        # 2. Mở Camera
-        cap = cv2.VideoCapture(1)
-        # Đợi một chút để camera khởi động
-        time.sleep(1.0) 
-
-        if not cap.isOpened():
-            return "[ERROR] Could not open webcam (Check permissions)"
-
-        # 3. ĐỌC THỬ 1 FRAME ĐỂ KIỂM TRA & LẤY KÍCH THƯỚC THỰC
-        ret, frame = cap.read()
-        if not ret:
-            return "[ERROR] Cannot read frame. Check Privacy Settings -> Camera."
-        
-        # Lấy kích thước CHÍNH XÁC từ frame vừa đọc được
-        height, width, layers = frame.shape
-        print(f"[INFO] Camera init: {width}x{height}")
-
-        # 4. Cấu hình file lưu
         os.makedirs("recordings", exist_ok=True)
         filename = f"recordings/webcam_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"
         
-        # Codec 'avc1' (H.264) thường tương thích tốt hơn trên macOS so với 'mp4v'
-        fourcc = cv2.VideoWriter_fourcc(*'avc1') 
-        out = cv2.VideoWriter(filename, fourcc, 20.0, (width, height))
-        
-        if not out.isOpened():
-            return "[ERROR] Could not init VideoWriter"
+        # Lấy kích thước từ frame hiện tại
+        with camera_lock:
+            if global_frame is None: return "[ERROR] Camera not ready"
+            height, width, _ = global_frame.shape
 
-        # 5. Bắt đầu ghi
-        print(f"[INFO] Recording for {seconds} seconds...")
+        fourcc = cv2.VideoWriter_fourcc(*'avc1')
+        out = cv2.VideoWriter(filename, fourcc, 30.0, (width, height))
+        
+        print(f"[INFO] Recording to {filename}...")
         start_time = time.time()
-        frame_count = 0
         
         while (time.time() - start_time) < seconds:
-            ret, frame = cap.read()
-            if ret:
-                out.write(frame)
-                frame_count += 1
-            else:
-                print("[WARNING] Missed a frame")
-                time.sleep(0.01) # Tránh treo CPU nếu mất kết nối cam
-
-        print(f"[INFO] Finished. Frames written: {frame_count}")
-        
-        if frame_count == 0:
-            return "[ERROR] No frames captured (File empty)"
+            # Lấy frame từ luồng global
+            with camera_lock:
+                if global_frame is not None:
+                    out.write(global_frame)
+            # Ngủ đúng bằng thời gian 1 frame (1/30s)
+            time.sleep(0.033)
 
         return f"[OK] Saved to {os.path.abspath(filename)}"
 
@@ -117,9 +175,15 @@ def record_webcam(seconds):
         return f"[ERROR] Webcam record failed: {e}"
     
     finally:
-        if cap: cap.release()
         if out: out.release()
-        cv2.destroyAllWindows()
+
+def send_image_data(conn, img_bytes):
+    if img_bytes is None:
+        conn.sendall(struct.pack(">L", 0))
+        return
+    size = len(img_bytes)
+    conn.sendall(struct.pack(">L", size))
+    conn.sendall(img_bytes)
 
 def shutdown_machine():
     subprocess.Popen(["sudo", "shutdown", "-h", "now"])
@@ -144,64 +208,66 @@ def get_process_list():
         return "\n".join(cleaned)
     except Exception as e: return f"[ERROR] {e}"
 
-# --- MAIN SERVER LOGIC ---
 def handle_client(conn, addr):
-    print(f"Client {addr} connected.")
-    while True:
-        try:
-            data = conn.recv(4096).decode().strip()
-            if not data: break
-            parts = data.split()
-            command = parts[0].lower()
+    try:
+        data = conn.recv(4096).decode().strip()
+        if not data: return
+        parts = data.split()
+        command = parts[0].lower()
 
-            if command == "list_apps":
-                # --- LOGIC MỚI: KIỂM TRA TRẠNG THÁI TỪNG APP ---
-                app_status_list = {}
-                for key, name in APPS.items():
-                    app_status_list[key] = {
-                        "name": name,
-                        "running": is_app_running(name)
-                    }
-                result = json.dumps(app_status_list)
-                # -----------------------------------------------
+        if command == "screen_stream":
+            img_data = capture_screen_bytes()
+            send_image_data(conn, img_data)
+            return
 
-            elif command == "webcam_record":
-                if len(parts) < 2: result = "[ERROR] args"
-                else: result = record_webcam(int(parts[1]))
+        elif command == "webcam_stream":
+            img_data = capture_webcam_bytes()
+            send_image_data(conn, img_data)
+            return
 
-            elif command in ("start", "stop"):
-                if len(parts) < 2: result = "[ERROR] no app"
-                else:
-                    key = " ".join(parts[1:]).lower()
-                    name = APPS.get(key, " ".join(parts[1:]))
-                    result = start_app(name) if command == "start" else stop_app(name)
-            
-            elif command == "screenshot": result = take_screenshot()
-            elif command == "list_processes": result = get_process_list()
-            elif command == "shutdown": result = shutdown_machine()
-            elif command == "restart": result = restart_machine()
-            elif command == "keylog_web":
-                with open("web_keylog.txt", "a") as f: f.write((parts[1] if len(parts)>1 else "")+'\n')
-                conn.sendall(b"OK"); continue
-            elif command == "keylog_data":
-                try: 
-                    with open("web_keylog.txt") as f: result=f.read()
-                except: result=""
-                conn.sendall(result.encode()); continue
-            else: result = "[ERROR] Unknown"
-            
-            conn.sendall(result.encode())
-        except: break
-    conn.close()
+        result = ""
+        if command == "list_apps":
+            app_status = {k: {"name": v, "running": is_app_running(v)} for k, v in APPS.items()}
+            result = json.dumps(app_status)
+        elif command == "screenshot": result = take_screenshot()
+        elif command in ("start", "stop"):
+             if len(parts) < 2: result = "[ERROR] no app"
+             else:
+                key = " ".join(parts[1:]).lower()
+                name = APPS.get(key, " ".join(parts[1:]))
+                result = start_app(name) if command == "start" else stop_app(name)
+        elif command == "webcam_record":
+             if len(parts) < 2: result = "[ERROR] args"
+             else: result = record_webcam(int(parts[1]))
+        elif command == "keylog_web":
+             with open("web_keylog.txt", "a") as f: f.write((parts[1] if len(parts)>1 else "")+'\n')
+             conn.sendall(b"OK"); return
+        elif command == "keylog_data":
+             try: 
+                 with open("web_keylog.txt") as f: result=f.read()
+             except: result=""
+             conn.sendall(result.encode()); return
+        elif command == "shutdown": result = shutdown_machine()
+        elif command == "restart": result = restart_machine()
+        elif command == "list_processes": result = get_process_list()
+        else: result = "[ERROR] Unknown"
+
+        conn.sendall(result.encode())
+
+    except Exception as e:
+        print(f"Error: {e}")
+    finally:
+        conn.close()
 
 def start_server():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         s.bind((HOST, PORT))
         s.listen()
-        print(f"Server on {HOST}:{PORT}")
+        print(f"Server listening on {HOST}:{PORT}")
         while True:
             conn, addr = s.accept()
             threading.Thread(target=handle_client, args=(conn, addr), daemon=True).start()
 
-if __name__ == "__main__": 
+if __name__ == "__main__":
     start_server()

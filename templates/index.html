@@ -11,10 +11,8 @@
             --xmas-green: #2e7d32;
             --xmas-gold: #fbc02d;
             --xmas-white: #ffffff;
-            --status-running-bg: #e8f5e9;
-            --status-running-text: #2e7d32;
-            --status-stopped-bg: #eceff1;
-            --status-stopped-text: #78909c;
+            --status-running-bg: #e8f5e9; --status-running-text: #2e7d32;
+            --status-stopped-bg: #eceff1; --status-stopped-text: #78909c;
         }
 
         body {
@@ -46,73 +44,61 @@
             transform: translateY(-2px); box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
 
-        /* --- STYLES CHO TRANG HOME (INTRO) --- */
+        /* --- INTRO CARD STYLES --- */
         .intro-card {
-            text-align: center;
-            padding: 40px;
-            border: 2px dashed var(--xmas-red);
-            border-radius: 20px;
-            background: rgba(255, 255, 255, 0.95);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center; padding: 40px; border: 2px dashed var(--xmas-red); border-radius: 20px;
+            background: rgba(255, 255, 255, 0.95); box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
-        .intro-title {
-            color: var(--xmas-red);
-            font-size: 2.5em;
-            margin-bottom: 5px;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
-        }
-        .intro-subtitle {
-            color: var(--xmas-green);
-            font-size: 1.4em;
-            margin-bottom: 30px;
-            font-weight: 600;
-        }
+        .intro-title { color: var(--xmas-red); font-size: 2.5em; margin-bottom: 5px; text-shadow: 1px 1px 2px rgba(0,0,0,0.1); }
+        .intro-subtitle { color: var(--xmas-green); font-size: 1.4em; margin-bottom: 30px; font-weight: 600; }
         .info-box {
-            display: inline-block;
-            text-align: left;
-            background: #e8f5e9;
-            padding: 20px 30px;
-            border-radius: 12px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-            border-left: 5px solid var(--xmas-green);
-            vertical-align: top;
-            margin-right: 20px;
+            display: inline-block; text-align: left; background: #e8f5e9; padding: 20px 30px;
+            border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); border-left: 5px solid var(--xmas-green);
+            vertical-align: top; margin-right: 20px;
         }
         .info-box p { margin: 8px 0; font-size: 1.1em; color: #37474f; }
         .info-box strong { color: var(--xmas-red); width: 100px; display: inline-block; }
-        
         .feature-box {
-            display: inline-block;
-            text-align: left;
-            background: #fffde7;
-            padding: 20px 30px;
-            border-radius: 12px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-            border-left: 5px solid var(--xmas-gold);
-            vertical-align: top;
-            max-width: 500px;
+            display: inline-block; text-align: left; background: #fffde7; padding: 20px 30px;
+            border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); border-left: 5px solid var(--xmas-gold);
+            vertical-align: top; max-width: 500px;
         }
         .feature-box h3 { margin-top: 0; color: #f57f17; border-bottom: 2px solid #fbc02d; padding-bottom: 10px; font-size: 1.2em;}
         .feature-list { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .feature-list li { color: #555; font-weight: 500; font-size: 0.95em; }
         .feature-list li::before { content: "✅ "; }
-
         .school-logo { font-size: 4em; margin-bottom: 20px; display: block; }
 
-        /* ... (Giữ nguyên CSS cũ cho table, button, v.v.) ... */
+        /* --- TABLE & BUTTONS --- */
         .table-container { max-height: 600px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 12px; background: white; }
         .process-table { width: 100%; border-collapse: collapse; font-size: 14px; }
         .process-table th { background-color: var(--xmas-red); color: white; padding: 15px; position: sticky; top: 0; z-index: 10;}
-        .process-table td { padding: 12px 15px; border-bottom: 1px solid #eee; }
+        .process-table td { padding: 12px 15px; border-bottom: 1px solid #eee; vertical-align: middle; }
+        
         .badge { padding: 6px 12px; border-radius: 50px; font-weight: 700; font-size: 12px; text-transform: uppercase; }
         .badge-running { background: var(--status-running-bg); color: var(--status-running-text); border: 1px solid #c8e6c9; }
         .badge-stopped { background: var(--status-stopped-bg); color: var(--status-stopped-text); border: 1px solid #cfd8dc; }
         
-        .btn-action { border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; color: white; margin: 0 2px; }
+        .btn-action { border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; color: white; margin: 0 2px; transition: all 0.2s; }
         .btn-start { background: linear-gradient(135deg, #43a047, #2e7d32); }
         .btn-stop, .danger { background: linear-gradient(135deg, #e53935, #c62828); }
-        .btn-disabled { background: #e0e0e0; color: #9e9e9e; cursor: not-allowed; }
+        .btn-disabled { background: #e0e0e0; color: #9e9e9e; cursor: not-allowed; pointer-events: none; }
+        
+        .btn-action:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
 
+        /* --- TOAST NOTIFICATION CSS (POPUP) --- */
+        #toast-container { position: fixed; bottom: 30px; right: 30px; z-index: 9999; }
+        .toast {
+            min-width: 250px; margin-top: 10px; background-color: #333; color: #fff; text-align: center;
+            border-radius: 8px; padding: 16px; position: relative; z-index: 1; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            display: flex; align-items: center; justify-content: center; animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        }
+        .toast.success { background-color: var(--xmas-green); border-left: 5px solid #a5d6a7; }
+        .toast.error { background-color: var(--xmas-red); border-left: 5px solid #ef9a9a; }
+        @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
+        @keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+
+        /* HELPERS */
         .main { margin: 30px auto; width: 90%; max-width: 1200px; padding: 25px; border-top: 5px solid var(--xmas-red); border-radius: 16px; background: rgba(255, 255, 255, 0.96); box-shadow: 0 15px 40px rgba(0,0,0,0.15); }
         .footer { text-align: center; padding: 20px; margin-top: auto; color: #455a64; background: rgba(255, 255, 255, 0.8); }
         .msg { background: #a5d6a7; padding: 15px; border-left: 5px solid #2e7d32; border-radius: 6px; margin-top: 15px; }
@@ -136,6 +122,8 @@
             <a href="/restart">Restart</a>
         </div>
     </div>
+
+    <div id="toast-container"></div>
 
     <div class="main">
 
@@ -187,15 +175,16 @@
                 <tbody>
                     {% if app_list %}
                         {% for key, info in app_list.items() %}
-                        <tr>
+                        <tr id="row-{{key}}">
                             <td style="font-weight: 500;">{{ info.name }}</td>
                             <td>
-                                {% if info.running %} <span class="badge badge-running">Running</span>
-                                {% else %} <span class="badge badge-stopped">Stopped</span> {% endif %}
+                                <span id="badge-{{key}}" class="badge {{ 'badge-running' if info.running else 'badge-stopped' }}">
+                                    {{ 'Running' if info.running else 'Stopped' }}
+                                </span>
                             </td>
                             <td style="text-align: center;">
-                                <button onclick="controlApp('start', '{{ key }}')" class="btn-action {{ 'btn-disabled' if info.running else 'btn-start' }}">▶ Start</button>
-                                <button onclick="controlApp('stop', '{{ key }}')" class="btn-action {{ 'btn-stop' if info.running else 'btn-disabled' }} danger">■ Stop</button>
+                                <button id="btn-start-{{key}}" onclick="sendControl('start', '{{ key }}')" class="btn-action {{ 'btn-disabled' if info.running else 'btn-start' }}">▶ Start</button>
+                                <button id="btn-stop-{{key}}" onclick="sendControl('stop', '{{ key }}')" class="btn-action {{ 'btn-stop' if info.running else 'btn-disabled' }} danger">■ Stop</button>
                             </td>
                         </tr>
                         {% endfor %}
@@ -234,8 +223,33 @@
         {% endif %}
 
         {% if mode == "screenshot" %}
-        <div style="text-align: center; padding: 30px;">
-            <button onclick="controlApp('screenshot', 'sys')" class="danger" style="padding:15px 30px; font-size: 16px;">📸 Take Screenshot</button>
+        <div style="text-align: center;">
+            <h2 style="color: var(--xmas-red);">Live Screen View</h2>
+            <div style="border: 5px solid #333; border-radius: 8px; overflow: hidden; display: inline-block; background: #000;">
+                <img src="/video_feed_screen" style="width: 100%; max-width: 900px; height: auto; display: block;">
+            </div>
+            <div style="margin-top: 20px;">
+                <p>Màn hình đang được truyền trực tiếp từ Server...</p>
+                <button class="danger btn-action" onclick="sendControl('screenshot')">📸 Save Screenshot to File</button>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if mode == "webcam" %}
+        <div style="text-align: center;">
+            <h2 style="color: var(--xmas-green);">Live Webcam View</h2>
+            <div style="border: 5px solid #2e7d32; border-radius: 8px; overflow: hidden; display: inline-block; background: #000;">
+                <img src="/video_feed_webcam" style="width: 100%; max-width: 800px; height: auto; display: block;">
+            </div>
+            <div style="margin-top: 20px;">
+                <label>Record Duration:</label>
+                <select id="cam-seconds" style="padding: 8px; border-radius: 4px;">
+                    <option value="5">5s</option>
+                    <option value="10">10s</option>
+                    <option value="20">20s</option>
+                </select>
+                <button class="btn-action" onclick="recordWebcam()">🎥 Record Video to File</button>
+            </div>
         </div>
         {% endif %}
 
@@ -248,26 +262,17 @@
         </script>
         {% endif %}
 
-        {% if mode == "webcam" %}
-        <h2>Record Webcam</h2>
-        <form action="/control" method="POST">
-            <input type="hidden" name="action" value="webcam_record">
-            <select name="seconds" style="padding:8px;"><option value="2">2s</option><option value="5">5s</option><option value="10">10s</option></select>
-            <button class="btn-action btn-start" style="margin-left:10px;">Start</button>
-        </form>
-        {% endif %}
-
         {% if mode == "shutdown" %}
         <div style="text-align: center; padding: 40px; border: 2px dashed var(--xmas-red); border-radius: 10px; background: #ffebee;">
             <h2 style="color: var(--xmas-red);">⚠️ Shutdown Server</h2>
-            <button onclick="controlApp('shutdown', 'system')" class="danger" style="padding: 15px 30px; font-size: 18px;">🛑 Confirm Shutdown</button>
+            <button onclick="sendControl('shutdown')" class="danger btn-action" style="padding: 15px 30px; font-size: 18px;">🛑 Confirm Shutdown</button>
         </div>
         {% endif %}
 
         {% if mode == "restart" %}
         <div style="text-align: center; padding: 40px; border: 2px dashed var(--xmas-gold); border-radius: 10px; background: #fffde7;">
             <h2 style="color: #f9a825;">🔄 Restart Server</h2>
-            <button onclick="controlApp('restart', 'system')" style="padding: 15px 30px; font-size: 18px; background: #fbc02d; color: #3e2723; border: none; font-weight: bold; cursor:pointer;">🔄 Confirm Restart</button>
+            <button onclick="sendControl('restart')" class="btn-action" style="padding: 15px 30px; font-size: 18px; background: #fbc02d; color: #3e2723;">🔄 Confirm Restart</button>
         </div>
         {% endif %}
 
@@ -281,18 +286,52 @@
     </div>
 
     <script>
-        function controlApp(action, appName) {
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => { toast.remove(); }, 3000);
+        }
+
+        function sendControl(action, appKey = null, extraData = {}) {
+            const payload = { action: action };
+            if (appKey) payload.app = appKey;
+            Object.assign(payload, extraData);
+
             fetch('/control', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({action: action, app: appName})
+                body: JSON.stringify(payload)
             })
-            .then(response => response.json())
+            .then(res => res.json())
             .then(data => {
-                alert(data.message); 
-                if (action !== 'shutdown' && action !== 'restart') location.reload(); 
+                if (data.status === 'ok') {
+                    showToast(data.message, 'success');
+                    if (action === 'start' || action === 'stop') refreshAppStatus();
+                } else {
+                    showToast(data.message, 'error');
+                }
             })
-            .catch(error => { console.error(error); alert("Connection Error!"); });
+            .catch(error => { console.error(error); showToast("Connection Error!", 'error'); });
+        }
+
+        function recordWebcam() {
+            const sec = document.getElementById('cam-seconds').value;
+            sendControl('webcam_record', null, { seconds: sec });
+        }
+
+        function refreshAppStatus() {
+            fetch('/api/apps_status').then(r=>r.json()).then(apps=>{
+                for(const [k,i] of Object.entries(apps)){
+                    const b=document.getElementById(`badge-${k}`);
+                    if(b){b.className=`badge ${i.running?'badge-running':'badge-stopped'}`;b.textContent=i.running?'Running':'Stopped';}
+                    const s=document.getElementById(`btn-start-${k}`), p=document.getElementById(`btn-stop-${k}`);
+                    if(s)s.className=`btn-action ${i.running?'btn-disabled':'btn-start'}`;
+                    if(p)p.className=`btn-action ${i.running?'btn-stop':'btn-disabled'}`;
+                }
+            });
         }
 
         function createSnowflake() {
