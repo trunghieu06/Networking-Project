@@ -3,6 +3,7 @@ import socket
 import json
 import os
 import struct
+from datetime import datetime
 
 TCP_SERVER_IP = "127.0.0.1"
 TCP_PORT = 5001
@@ -63,7 +64,7 @@ def save_screenshot_locally():
             return "[ERROR] Failed to download image from server"
         
         # Tạo thư mục lưu trên Client
-        save_dir = "client_screenshots"
+        save_dir = "screenshots"
         os.makedirs(save_dir, exist_ok=True)
         
         # Tạo tên file theo thời gian
@@ -74,6 +75,28 @@ def save_screenshot_locally():
             f.write(img_data)
             
         # Trả về đường dẫn tuyệt đối để dễ tìm
+        return f"[OK] Saved to Client: {os.path.abspath(filename)}"
+    except Exception as e:
+        return f"[ERROR] {e}"
+
+def save_video_locally(seconds):
+    try:
+        # Gửi lệnh quay video kèm số giây
+        # Server sẽ quay -> gửi dữ liệu file về
+        video_data = get_image_from_server(f"webcam_record {seconds}")
+        
+        if not video_data:
+            return "[ERROR] Failed to download video from server"
+        
+        # Tạo thư mục lưu trên Client
+        save_dir = "client_recordings"
+        os.makedirs(save_dir, exist_ok=True)
+        
+        filename = f"{save_dir}/video_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"
+        
+        with open(filename, "wb") as f:
+            f.write(video_data)
+            
         return f"[OK] Saved to Client: {os.path.abspath(filename)}"
     except Exception as e:
         return f"[ERROR] {e}"
@@ -196,7 +219,13 @@ def control_action():
             msg = "[ERROR] Invalid seconds"
             if request.is_json: return jsonify({"status": "error", "message": msg})
             return render_template("index.html", title="Error", message=msg)
-        command = f"webcam_record {seconds}"
+        
+        # GỌI HÀM LƯU LOCAL MỚI
+        result = save_video_locally(seconds)
+        
+        if request.is_json:
+            return jsonify({"status": "ok", "message": result})
+        return render_template("index.html", title="Result", message=result)
 
     elif action == "shutdown": command = "shutdown"
     elif action == "restart": command = "restart"
