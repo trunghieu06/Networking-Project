@@ -54,6 +54,30 @@ def get_image_from_server(command):
     except:
         return None
 
+def save_screenshot_locally():
+    try:
+        # Gửi lệnh download_screenshot lên server
+        img_data = get_image_from_server("download_screenshot")
+        
+        if not img_data:
+            return "[ERROR] Failed to download image from server"
+        
+        # Tạo thư mục lưu trên Client
+        save_dir = "client_screenshots"
+        os.makedirs(save_dir, exist_ok=True)
+        
+        # Tạo tên file theo thời gian
+        filename = f"{save_dir}/shot_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+        
+        # Ghi dữ liệu ra file
+        with open(filename, "wb") as f:
+            f.write(img_data)
+            
+        # Trả về đường dẫn tuyệt đối để dễ tìm
+        return f"[OK] Saved to Client: {os.path.abspath(filename)}"
+    except Exception as e:
+        return f"[ERROR] {e}"
+
 def generate_stream(command):
     while True:
         frame_data = get_image_from_server(command)
@@ -159,7 +183,13 @@ def control_action():
         command = f"{action} {app_name}"
 
     elif action == "screenshot":
-        command = "screenshot"
+        # Gọi hàm lưu file cục bộ thay vì gửi lệnh "screenshot" cũ
+        result = save_screenshot_locally()
+        
+        if request.is_json:
+            return jsonify({"status": "ok", "message": result})
+        # Fallback cho form thường
+        return render_template("index.html", title="Result", message=result, mode=action)
     
     elif action == "webcam_record":
         if not seconds or not str(seconds).isdigit():
