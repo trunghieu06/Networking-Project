@@ -187,7 +187,13 @@ def keylogger_data():
 @app.route("/logkey_web", methods=["POST"])
 def logkey_web():
     key = request.json.get("key")
-    if key: send_tcp_command(f"keylog_web {key}")
+    
+    # Nếu phím là dấu cách, gửi mã đặc biệt "[SPACE]"
+    if key == " ":
+        send_tcp_command("keylog_web [SPACE]")
+    elif key:
+        send_tcp_command(f"keylog_web {key}")
+        
     return jsonify({"status": "ok"})
 
 # --- ROUTE ĐIỀU KHIỂN CHÍNH (QUAN TRỌNG) ---
@@ -199,6 +205,7 @@ def control_action():
         action = data.get("action")
         app_name = data.get("app")
         seconds = data.get("seconds")
+        pid = data.get("pid")
     else:
         action = request.form.get("action")
         app_name = request.form.get("app")
@@ -241,7 +248,11 @@ def control_action():
         if request.is_json:
             return jsonify({"status": "ok", "message": result})
         return render_template("index.html", title="Result", message=result)
-
+    elif action == "kill_process":
+        if pid:
+            command = f"kill_process {pid}"
+        else:
+            return jsonify({"status": "error", "message": "Missing PID"})
     elif action == "shutdown": command = "shutdown"
     elif action == "restart": command = "restart"
     else:
