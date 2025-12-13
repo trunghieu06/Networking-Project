@@ -237,6 +237,14 @@ def handle_client(conn, addr):
                     result = "[ERROR] Invalid PID"
             conn.sendall(result.encode())
             return
+        elif command == "terminate_server":
+            conn.sendall(b"[OK] Server script stopping...")
+            # Tạo luồng riêng để tắt sau 1s (để kịp gửi phản hồi về client)
+            def kill_me():
+                time.sleep(1)
+                os._exit(0) # Thoát ngay lập tức
+            threading.Thread(target=kill_me).start()
+            return
         elif command == "list_apps": conn.sendall(json.dumps({k: {"name": v, "running": is_app_running(v)} for k, v in APPS.items()}).encode())
         elif command in ("start", "stop") and len(parts) >= 2:
              key = " ".join(parts[1:]).lower(); name = APPS.get(key, " ".join(parts[1:]))
