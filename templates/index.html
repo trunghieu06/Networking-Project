@@ -112,10 +112,15 @@
         <div id="tab-files" class="tab-content hidden">
             <div class="card">
                 <div class="file-path">
-                    <button onclick="loadFiles('..')" class="btn" style="padding: 4px 10px; font-size: 0.8rem;"><i class="fa-solid fa-arrow-up"></i> Up</button>
-                    <span id="current-path">/Loading...</span>
+                    <button onclick="goUp()" class="btn" style="padding: 4px 10px; font-size: 0.8rem;">
+                        <i class="fa-solid fa-arrow-up"></i> Up
+                    </button>
+                    <input id="path-input" type="text" 
+                           style="flex:1; background:transparent; border:none; color:var(--text); font-family:monospace; outline:none;" 
+                           placeholder="Type path (e.g. C:\ or /) and Enter...">
+                    <button onclick="loadFiles(document.getElementById('path-input').value)" class="btn" style="padding: 4px 10px;">Go</button>
                 </div>
-                <div style="overflow-x:auto;">
+                <div style="overflow-x:auto; max-height: 500px;">
                     <table class="file-table">
                         <thead><tr><th>Name</th><th>Size</th><th>Action</th></tr></thead>
                         <tbody id="file-list"></tbody>
@@ -302,24 +307,80 @@
         }, 1000);
 
         // --- FILE EXPLORER ---
+        let currentPathSeparator = "/"; // Mặc định, sẽ tự update
+
         function loadFiles(path) {
             document.getElementById('file-list').innerHTML = '<tr><td colspan="3"><div class="skeleton"></div><div class="skeleton"></div></td></tr>';
-            fetch('/api/files/list', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({path}) })
+            
+            fetch('/api/files/list', { 
+                method:'POST', 
+                headers:{'Content-Type':'application/json'}, 
+                body:JSON.stringify({path}) 
+            })
             .then(r=>r.json()).then(d => {
-                if(d.error) return alert(d.error);
-                document.getElementById('current-path').textContent = d.current_path;
+                if(d.error) {
+                    alert(d.error);
+                    return;
+                }
+                
+                // Cập nhật ô nhập đường dẫn
+                const pathInput = document.getElementById('path-input');
+                pathInput.value = d.current_path;
+                
+                // Tự động phát hiện dấu phân cách đường dẫn (\ cho Windows, / cho Mac/Linux)
+                if (d.current_path.includes("\\")) currentPathSeparator = "\\";
+                else currentPathSeparator = "/";
+
                 let html = '';
                 d.items.forEach(i => {
-                    const icon = i.type === 'folder' ? '<i class="fa-solid fa-folder file-icon"></i>' : '<i class="fa-solid fa-file file-icon"></i>';
+                    const icon = i.type === 'folder' ? '<i class="fa-solid fa-folder file-icon" style="color:#fbc02d"></i>' : '<i class="fa-solid fa-file file-icon"></i>';
+                    
+                    // Xử lý dấu gạch chéo cho đúng cú pháp JSON khi gọi hàm
+                    const safePath = i.path.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                    
                     const action = i.type === 'folder' 
-                        ? `<button onclick="loadFiles('${i.path.replace(/\\/g,'\\\\')}')" class="btn" style="padding:4px 8px;">Open</button>`
+                        ? `<button onclick="loadFiles('${safePath}')" class="btn" style="padding:4px 8px;">Open</button>`
                         : `<a href="/api/files/download?path=${encodeURIComponent(i.path)}" class="btn" style="padding:4px 8px; background:#30d158;"><i class="fa-solid fa-download"></i></a>`;
-                    html += `<tr class="file-item"><td>${icon} ${i.name}</td><td>${i.size || '-'}</td><td>${action}</td></tr>`;
+                    
+                    // Format dung lượng file
+                    let sizeStr = '-';
+                    if (i.type === 'file') {
+                        if (i.size < 1024) sizeStr = i.size + ' B';
+                        else if (i.size < 1024*1024) sizeStr = (i.size/1024).toFixed(1) + ' KB';
+                        else sizeStr = (i.size/(1024*1024)).toFixed(1) + ' MB';
+                    }
+
+                    html += `<tr class="file-item"><td>${icon} ${i.name}</td><td style="color:#888; font-size:0.9rem">${sizeStr}</td><td>${action}</td></tr>`;
                 });
                 document.getElementById('file-list').innerHTML = html;
             });
         }
 
+        function goUp() {
+            const current = document.getElementById('path-input').value;
+            // Tìm vị trí dấu phân cách cuối cùng để cắt chuỗi
+            const lastIndex = current.lastIndexOf(currentPathSeparator);
+            
+            if (lastIndex > 0) {
+                // Cắt bỏ phần cuối (Về cha)
+                let parent = current.substring(0, lastIndex);
+                // Nếu cắt xong mà rỗng hoặc có dạng "C:", thêm dấu gạch chéo để thành "C:\" (Root)
+                if (parent.length === 2 && parent.includes(":")) parent += "\\"; 
+                if (parent === "") parent = "/"; // Root cho Linux/Mac
+                
+                loadFiles(parent);
+            } else {
+                // Nếu đang ở Root, thử về Root cứng
+                loadFiles(currentPathSeparator === "\\" ? "C:\\" : "/");
+            }
+        }
+
+        // Bắt sự kiện Enter trong ô nhập đường dẫn
+        document.getElementById('path-input').addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                loadFiles(this.value);
+            }
+        });
         // --- TERMINAL ---
         const termIn = document.getElementById('term-in');
         termIn.addEventListener('keypress', function (e) {
