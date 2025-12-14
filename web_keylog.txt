@@ -1,1 +1,1 @@
-o k e  [SPACE]  k h o n g  [SPACE]  a n h  [SPACE]  e m  [cmd]  t p o r r  [BACKSPACE]   [down]   [up]   [down]   [ENTER]  [cmd]   [shift]  b  [cmd]  t c o u r s e  [ENTER]  [cmd]  t e  [BACKSPACE]   [BACKSPACE]  e x e  [BACKSPACE]  c e l  [SPACE]   [ENTER]  [caps_lock]  9 2  [BACKSPACE]  . 2  [cmd]  f 9 2  [BACKSPACE]  /  [BACKSPACE]  . 2  [cmd]  w  [cmd]  w  [ctrl]  c 
+ [cmd]  w  [ctrl]  c 

