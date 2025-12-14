@@ -8,27 +8,59 @@
     
     <style>
         /* THEME & VARS */
-        :root { --bg: #000; --glass: rgba(30,30,30,0.6); --border: 1px solid rgba(255,255,255,0.1); --accent: #0a84ff; --danger: #ff3b30; --success: #30d158; --text: #fff; --text-dim: #888; }
-        [data-theme="light"] { --bg: #f2f2f7; --glass: rgba(255,255,255,0.8); --border: 1px solid #ccc; --accent: #007aff; --text: #000; --text-dim: #666; }
+        :root { 
+            --bg: #000; --glass: rgba(30,30,30,0.6); --border: 1px solid rgba(255,255,255,0.1); 
+            --accent: #0a84ff; --danger: #ff3b30; --success: #30d158; --text: #fff; --text-dim: #bbb;
+            --info-bg: linear-gradient(135deg, rgba(30,30,30,0.9), rgba(20,20,20,0.9));
+            --info-border: 1px solid rgba(255,255,255,0.15);
+            --member-bg: rgba(255,255,255,0.08);
+            --member-hover: rgba(255,255,255,0.15);
+        }
+        [data-theme="light"] { 
+            --bg: #f2f2f7; --glass: rgba(255,255,255,0.8); --border: 1px solid #ccc; 
+            --accent: #007aff; --text: #000; --text-dim: #555; 
+            --info-bg: linear-gradient(135deg, #ffffff, #f0f0f0);
+            --info-border: 1px solid rgba(0,0,0,0.1);
+            --member-bg: rgba(0,0,0,0.05);
+            --member-hover: rgba(0,0,0,0.1);
+        }
         
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: linear-gradient(135deg, var(--bg), #1c1c1e); color: var(--text); height: 100vh; display: flex; overflow: hidden; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: linear-gradient(135deg, var(--bg), #1c1c1e); color: var(--text); height: 100vh; display: flex; overflow: hidden; transition: background 0.3s, color 0.3s; }
         
         /* SIDEBAR */
-        .sidebar { width: 80px; background: var(--glass); backdrop-filter: blur(20px); border-right: var(--border); display: flex; flex-direction: column; align-items: center; padding: 20px 0; z-index: 10; }
-        .nav-item { width: 50px; height: 50px; display: flex; justify-content: center; align-items: center; margin-bottom: 20px; border-radius: 14px; color: var(--text-dim); font-size: 1.4rem; cursor: pointer; transition: 0.3s; text-decoration: none; }
-        .nav-item:hover, .nav-item.active { background: var(--accent); color: white; transform: scale(1.1); box-shadow: 0 4px 15px var(--accent); }
+        .sidebar { width: 80px; background: var(--glass); backdrop-filter: blur(20px); border-right: var(--border); display: flex; flex-direction: column; align-items: center; padding: 20px 0; z-index: 10; transition: 0.3s; }
+        
+        .nav-item { 
+            width: 50px; height: 50px; display: flex; justify-content: center; align-items: center; 
+            margin-bottom: 20px; border-radius: 14px; color: var(--text-dim); font-size: 1.4rem; 
+            cursor: pointer; transition: all 0.3s ease; text-decoration: none; position: relative;
+        }
+        .nav-item i { transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); position: absolute; opacity: 1; transform: scale(1); }
+        .nav-item span { 
+            position: absolute; left: 50%; transform: translateX(-50%) scale(0.5) translateY(10px); 
+            opacity: 0; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; 
+            letter-spacing: 0.5px; font-family: system-ui; white-space: nowrap; 
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); pointer-events: none;
+        }
+        
+        .nav-item:hover { background: var(--accent); color: white !important; box-shadow: 0 4px 15px var(--accent); }
+        .nav-item:hover i { opacity: 0; transform: scale(0) rotate(180deg); }
+        .nav-item:hover span { opacity: 1; transform: translateX(-50%) scale(1) translateY(0); }
+        .nav-item.active { background: var(--accent); color: white; box-shadow: 0 4px 15px var(--accent); }
+
         .bottom-nav { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
 
-        /* MAIN */
+        /* MAIN CONTENT */
         .main { flex: 1; padding: 30px; overflow-y: auto; position: relative; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
         .title { font-size: 2rem; font-weight: 700; }
         .status { padding: 6px 12px; border-radius: 20px; background: rgba(46, 204, 113, 0.2); color: #2ecc71; border: 1px solid rgba(46, 204, 113, 0.3); font-weight: 600; font-size: 0.9rem; cursor: pointer;}
 
         /* CARDS */
-        .card { background: var(--glass); border: var(--border); border-radius: 24px; padding: 25px; margin-bottom: 25px; backdrop-filter: blur(20px); box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
-        
+        .card { background: var(--glass); border: var(--border); border-radius: 24px; padding: 25px; margin-bottom: 25px; backdrop-filter: blur(20px); box-shadow: 0 8px 32px rgba(0,0,0,0.3); transition: background 0.3s, border 0.3s; }
+        .info-card-style { background: var(--info-bg); border: var(--info-border); transition: background 0.3s, border 0.3s; }
+
         /* UTILS */
         .btn { padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; color: white; background: var(--accent); display: inline-flex; align-items: center; gap: 8px; }
         .btn:hover { filter: brightness(1.1); transform: translateY(-2px); transition: 0.2s; }
@@ -36,75 +68,130 @@
         .btn-success { background: var(--success); }
         .hidden { display: none; }
 
-        /* FEATURE SPECIFIC STYLES */
-        .file-path { padding: 10px; background: rgba(255,255,255,0.1); border-radius: 8px; margin-bottom: 15px; font-family: monospace; display: flex; align-items: center; gap: 10px; }
-        .file-table { width: 100%; border-collapse: collapse; }
-        .file-table td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .file-item { cursor: pointer; transition: 0.2s; }
-        .file-item:hover { background: rgba(255,255,255,0.05); }
-        .file-icon { width: 24px; text-align: center; color: var(--accent); margin-right: 10px; }
+        /* TOOLTIP */
+        [data-tooltip]:hover::after { content: attr(data-tooltip); position: absolute; bottom: 125%; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: #fff; padding: 5px 10px; border-radius: 6px; font-size: 0.8rem; white-space: nowrap; pointer-events: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 100; }
+        
+        .shortcut-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; margin-top: 15px; }
+        .shortcut-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; border-radius: 16px; border: none; cursor: pointer; background: var(--member-bg); color: var(--text); transition: 0.2s; position: relative; }
+        .shortcut-btn:hover { background: var(--member-hover); transform: translateY(-3px); }
+        .shortcut-btn i { font-size: 1.8rem; margin-bottom: 10px; color: var(--accent); }
 
+        /* COMPONENTS */
+        .file-path { padding: 10px; background: var(--member-bg); border-radius: 8px; margin-bottom: 15px; font-family: monospace; display: flex; align-items: center; gap: 10px; color: var(--text); }
+        .file-table { width: 100%; border-collapse: collapse; }
+        .file-table td { padding: 12px; border-bottom: 1px solid rgba(128,128,128,0.1); }
+        .file-item { cursor: pointer; transition: 0.2s; }
+        .file-item:hover { background: var(--member-hover); }
         .terminal { background: #1e1e1e; border-radius: 12px; padding: 15px; font-family: 'Consolas', monospace; color: #0f0; height: 400px; display: flex; flex-direction: column; border: 1px solid #333; }
         .term-out { flex: 1; overflow-y: auto; white-space: pre-wrap; font-size: 0.9rem; padding-bottom: 10px; }
         .term-in { background: transparent; border: none; color: #fff; font-family: inherit; font-size: 1rem; outline: none; width: 100%; border-top: 1px solid #333; padding-top: 10px; }
-
-        .skeleton { width: 100%; height: 20px; background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%); background-size: 200% 100%; animation: loading 1.5s infinite; border-radius: 4px; margin: 10px 0; }
+        .skeleton { width: 100%; height: 20px; background: linear-gradient(90deg, rgba(128,128,128,0.1) 25%, rgba(128,128,128,0.2) 50%, rgba(128,128,128,0.1) 75%); background-size: 200% 100%; animation: loading 1.5s infinite; border-radius: 4px; margin: 10px 0; }
         @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-
         .chart-container { height: 250px; width: 100%; }
-        
-        /* WEBCAM & SCREEN Styles */
         .video-box { width: 100%; max-width: 900px; margin: 0 auto; background: #000; border-radius: 12px; overflow: hidden; position: relative; border: 2px solid #333; aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; }
         .video-box img { width: 100%; height: auto; display: block; }
         .rec-tag { position: absolute; top: 15px; right: 15px; background: rgba(255,0,0,0.8); color: white; padding: 5px 10px; border-radius: 20px; font-size: 0.8rem; display: none; align-items: center; gap: 5px; }
         .blink { width: 8px; height: 8px; background: #fff; border-radius: 50%; animation: blink 1s infinite; } @keyframes blink { 50% { opacity: 0; } }
-
         .keylog-window { background: #111; color: var(--success); padding: 15px; border-radius: 12px; height: 300px; overflow-y: auto; font-family: monospace; border: 1px solid #333; white-space: pre-wrap; }
+        
+        .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-top: 15px; }
+        .member-item { display: flex; align-items: center; gap: 15px; background: var(--member-bg); padding: 15px; border-radius: 12px; transition: 0.2s; border: 1px solid transparent; }
+        .member-item:hover { background: var(--member-hover); border-color: var(--accent); transform: translateY(-2px); }
+        .member-avatar { width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--accent); object-fit: cover; }
+        .info-label { color: var(--accent); font-weight: 600; margin-right: 5px; }
 
-        /* TOAST */
         #toast { position: fixed; top: 30px; left: 50%; transform: translate(-50%, -100px); background: rgba(255,255,255,0.9); color: black; padding: 10px 20px; border-radius: 50px; transition: 0.5s; z-index: 100; font-weight: 600; }
     </style>
 </head>
 <body>
 
     <div class="sidebar">
-        <a href="#home" class="nav-item active" onclick="showTab('home')" title="Dashboard"><i class="fa-solid fa-gauge"></i></a>
-        <a href="#apps" class="nav-item" onclick="showTab('apps')" title="Apps"><i class="fa-brands fa-app-store-ios"></i></a>
-        <a href="#processes" class="nav-item" onclick="showTab('processes')" title="Processes"><i class="fa-solid fa-microchip"></i></a>
-        <a href="#files" class="nav-item" onclick="showTab('files')" title="Files"><i class="fa-solid fa-folder"></i></a>
-        <a href="#terminal" class="nav-item" onclick="showTab('terminal')" title="Terminal"><i class="fa-solid fa-terminal"></i></a>
-        
-        <a href="#screen" class="nav-item" onclick="showTab('screen')" title="Screen Monitor"><i class="fa-solid fa-desktop"></i></a>
-        
-        <a href="#webcam" class="nav-item" onclick="showTab('webcam')" title="Webcam"><i class="fa-solid fa-video"></i></a>
-        <a href="#keylogger" class="nav-item" onclick="showTab('keylogger')" title="Keylogger"><i class="fa-solid fa-keyboard"></i></a>
-        <a href="#power" class="nav-item" onclick="showTab('power')" title="Power" style="color: var(--danger)"><i class="fa-solid fa-power-off"></i></a>
-        
+        <a href="#home" class="nav-item active" onclick="showTab('home')">
+            <i class="fa-solid fa-gauge"></i><span data-lang="home">Trang chủ</span>
+        </a>
+        <a href="#apps" class="nav-item" onclick="showTab('apps')">
+            <i class="fa-brands fa-app-store-ios"></i><span data-lang="apps">Ứng dụng</span>
+        </a>
+        <a href="#processes" class="nav-item" onclick="showTab('processes')">
+            <i class="fa-solid fa-microchip"></i><span data-lang="tasks">Tác vụ</span>
+        </a>
+        <a href="#files" class="nav-item" onclick="showTab('files')">
+            <i class="fa-solid fa-folder"></i><span data-lang="files">Tệp tin</span>
+        </a>
+        <a href="#terminal" class="nav-item" onclick="showTab('terminal')">
+            <i class="fa-solid fa-terminal"></i><span data-lang="term">Lệnh</span>
+        </a>
+        <a href="#screen" class="nav-item" onclick="showTab('screen')">
+            <i class="fa-solid fa-desktop"></i><span data-lang="view">Xem</span>
+        </a>
+        <a href="#webcam" class="nav-item" onclick="showTab('webcam')">
+            <i class="fa-solid fa-video"></i><span data-lang="cam">Cam</span>
+        </a>
+        <a href="#keylogger" class="nav-item" onclick="showTab('keylogger')">
+            <i class="fa-solid fa-keyboard"></i><span data-lang="keys">Phím</span>
+        </a>
+        <a href="#power" class="nav-item" onclick="showTab('power')" style="color: var(--danger)">
+            <i class="fa-solid fa-power-off"></i><span data-lang="pwr">Nguồn</span>
+        </a>
         <div class="bottom-nav">
-            <div class="nav-item" onclick="toggleTheme()" title="Theme"><i class="fa-solid fa-moon"></i></div>
-            <div class="nav-item" onclick="openSettings()" style="color:var(--accent)" title="Settings"><i class="fa-solid fa-wifi"></i></div>
+            <div class="nav-item" onclick="toggleLang()" style="color: #f1c40f;">
+                <i class="fa-solid fa-language"></i><span data-lang="lang_btn">Ngôn ngữ</span>
+            </div>
+            <div class="nav-item" onclick="toggleTheme()">
+                <i class="fa-solid fa-moon"></i><span data-lang="mode">Chế độ</span>
+            </div>
+            <div class="nav-item" onclick="openSettings()" style="color:var(--accent)">
+                <i class="fa-solid fa-wifi"></i><span data-lang="set">Cài đặt</span>
+            </div>
         </div>
     </div>
 
     <div class="main">
         <div class="header">
             <div class="title" id="page-title">DASHBOARD</div>
-            <div class="status" onclick="openSettings()"><div style="width:8px;height:8px;background:#2ecc71;border-radius:50%;display:inline-block;margin-right:5px;"></div> <span id="ip-display">Connected</span></div>
+            <div class="status" onclick="openSettings()"><div style="width:8px;height:8px;background:#2ecc71;border-radius:50%;display:inline-block;margin-right:5px;"></div> <span id="ip-display" data-lang="connected">Đã kết nối</span></div>
         </div>
 
         <div id="tab-home" class="tab-content">
-            <div class="card">
-                <h3><i class="fa-solid fa-chart-line"></i> Real-time Resources</h3>
-                <div class="chart-container">
-                    <canvas id="sysChart"></canvas>
+            
+            <div class="card info-card-style">
+                <h3 style="color: var(--accent); margin-bottom: 20px; display: flex; align-items: center; gap: 10px; font-size: 1.5rem;">
+                    <i class="fa-solid fa-graduation-cap"></i> <span data-lang="info_title">Thông Tin Đồ Án</span>
+                </h3>
+                <div style="line-height: 1.8; font-size: 1rem; color: var(--text);">
+                    <p><span class="info-label" data-lang="info_subj">Môn học:</span> <span data-lang="info_subj_val">Mạng máy tính - Sinh viên Năm 2</span></p>
+                    <p><span class="info-label" data-lang="info_fac">Khoa:</span> <span data-lang="info_fac_val">Công nghệ Thông tin - ĐH KHTN, ĐHQG-HCM</span></p>
+                    <p style="margin-bottom: 20px;">
+                        <span class="info-label" data-lang="info_desc">Mô tả:</span> <span data-lang="info_desc_val">Hệ thống điều khiển từ xa qua TCP. Quản lý Process, App, File, Terminal, Keylogger, Webcam, Remote Desktop.</span>
+                    </p>
+                    <div style="background: var(--member-bg); padding: 20px; border-radius: 16px;">
+                        <strong style="color: var(--text); display: block; margin-bottom: 15px; font-size: 1.1rem;" data-lang="info_mem">Thành viên thực hiện:</strong>
+                        <div class="info-grid">
+                            <div class="member-item"><img src="/static/avatars/hieu.jpg" onerror="this.src='https://ui-avatars.com/api/?name=Tran+Trung+Hieu&background=0a84ff&color=fff&size=128'" class="member-avatar"><div><div style="color: var(--text); font-weight: 700; font-size: 1.1rem;">Trần Trung Hiếu</div><div style="color: var(--text-dim); font-size: 0.9rem;">MSSV: 24122033</div></div></div>
+                            <div class="member-item"><img src="/static/avatars/dat.jpg" onerror="this.src='https://ui-avatars.com/api/?name=Nguyen+Duy+Dat&background=30d158&color=fff&size=128'" class="member-avatar"><div><div style="color: var(--text); font-weight: 700; font-size: 1.1rem;">Nguyễn Duy Đạt</div><div style="color: var(--text-dim); font-size: 0.9rem;">MSSV: 24122014</div></div></div>
+                            <div class="member-item"><img src="/static/avatars/hiep.jpg" onerror="this.src='https://ui-avatars.com/api/?name=Mai+Hoang+Hiep&background=ff9f43&color=fff&size=128'" class="member-avatar"><div><div style="color: var(--text); font-weight: 700; font-size: 1.1rem;">Mai Hoàng Hiệp</div><div style="color: var(--text-dim); font-size: 0.9rem;">MSSV: 24122015</div></div></div>
+                        </div>
+                    </div>
                 </div>
             </div>
+
             <div class="card">
-                <h3>Quick Shortcuts</h3>
-                <div style="display:flex; gap:10px; margin-top:15px;">
-                    <button onclick="showTab('screen')" class="btn"><i class="fa-solid fa-desktop"></i> Monitor Screen</button>
-                    <button onclick="showTab('webcam')" class="btn" style="background:#8e44ad"><i class="fa-solid fa-video"></i> View Cam</button>
-                    <button onclick="showTab('terminal')" class="btn" style="background:#34495e"><i class="fa-solid fa-terminal"></i> Terminal</button>
+                <h3 data-lang="res_title"><i class="fa-solid fa-chart-line"></i> Tài nguyên thời gian thực</h3>
+                <div class="chart-container"><canvas id="sysChart"></canvas></div>
+            </div>
+            
+            <div class="card">
+                <h3 data-lang="feat_title">Tất cả chức năng</h3>
+                <div class="shortcut-grid">
+                    <button class="shortcut-btn" onclick="showTab('screen')" data-tooltip="Live Screen Monitor"><i class="fa-solid fa-desktop" style="color: #3498db;"></i><span data-lang="sc_screen">Màn hình</span></button>
+                    <button class="shortcut-btn" onclick="showTab('webcam')" data-tooltip="Live Webcam Stream"><i class="fa-solid fa-video" style="color: #9b59b6;"></i><span data-lang="sc_webcam">Webcam</span></button>
+                    <button class="shortcut-btn" onclick="showTab('keylogger')" data-tooltip="Keylogger"><i class="fa-solid fa-keyboard" style="color: #e67e22;"></i><span data-lang="sc_keylog">Keylog</span></button>
+                    <button class="shortcut-btn" onclick="showTab('apps')" data-tooltip="Application Manager"><i class="fa-brands fa-app-store-ios" style="color: #2ecc71;"></i><span data-lang="sc_apps">Ứng dụng</span></button>
+                    <button class="shortcut-btn" onclick="showTab('processes')" data-tooltip="Process Manager"><i class="fa-solid fa-microchip" style="color: #e74c3c;"></i><span data-lang="sc_tasks">Tác vụ</span></button>
+                    <button class="shortcut-btn" onclick="showTab('files')" data-tooltip="File Explorer"><i class="fa-solid fa-folder-open" style="color: #f1c40f;"></i><span data-lang="sc_files">Tệp tin</span></button>
+                    <button class="shortcut-btn" onclick="showTab('terminal')" data-tooltip="Remote Terminal"><i class="fa-solid fa-terminal" style="color: #95a5a6;"></i><span data-lang="sc_term">Lệnh</span></button>
+                    <button class="shortcut-btn" onclick="sendControl('screenshot')" data-tooltip="Take Screenshot"><i class="fa-solid fa-camera" style="color: #1abc9c;"></i><span data-lang="sc_snap">Chụp ảnh</span></button>
+                    <button class="shortcut-btn" onclick="showTab('power')" data-tooltip="Power Control"><i class="fa-solid fa-power-off" style="color: #c0392b;"></i><span data-lang="sc_power">Nguồn</span></button>
                 </div>
             </div>
         </div>
@@ -112,19 +199,12 @@
         <div id="tab-files" class="tab-content hidden">
             <div class="card">
                 <div class="file-path">
-                    <button onclick="goUp()" class="btn" style="padding: 4px 10px; font-size: 0.8rem;">
-                        <i class="fa-solid fa-arrow-up"></i> Up
-                    </button>
-                    <input id="path-input" type="text" 
-                           style="flex:1; background:transparent; border:none; color:var(--text); font-family:monospace; outline:none;" 
-                           placeholder="Type path (e.g. C:\ or /) and Enter...">
+                    <button onclick="goUp()" class="btn" style="padding: 4px 10px; font-size: 0.8rem;"><i class="fa-solid fa-arrow-up"></i> Up</button>
+                    <input id="path-input" type="text" style="flex:1; background:transparent; border:none; color:var(--text); font-family:monospace; outline:none;" placeholder="Path...">
                     <button onclick="loadFiles(document.getElementById('path-input').value)" class="btn" style="padding: 4px 10px;">Go</button>
                 </div>
                 <div style="overflow-x:auto; max-height: 500px;">
-                    <table class="file-table">
-                        <thead><tr><th>Name</th><th>Size</th><th>Action</th></tr></thead>
-                        <tbody id="file-list"></tbody>
-                    </table>
+                    <table class="file-table"><thead><tr><th data-lang="th_name">Tên</th><th data-lang="th_size">Kích thước</th><th data-lang="th_action">Hành động</th></tr></thead><tbody id="file-list"></tbody></table>
                 </div>
             </div>
         </div>
@@ -132,7 +212,7 @@
         <div id="tab-terminal" class="tab-content hidden">
             <div class="card" style="padding:0; overflow:hidden;">
                 <div class="terminal">
-                    <div class="term-out" id="term-out">Welcome to Remote Shell.<br>Type a command and press Enter...<br></div>
+                    <div class="term-out" id="term-out">Welcome to Remote Shell.<br>Type a command...<br></div>
                     <input type="text" class="term-in" id="term-in" placeholder=">_" autocomplete="off">
                 </div>
             </div>
@@ -141,21 +221,18 @@
         <div id="tab-processes" class="tab-content hidden">
             <div class="card">
                 <div style="display:flex; justify-content:space-between;">
-                    <h3>Top Processes</h3>
-                    <button onclick="loadProcesses()" class="btn"><i class="fa-solid fa-rotate"></i> Refresh</button>
+                    <h3 data-lang="proc_title">Tiến trình hàng đầu</h3>
+                    <button onclick="loadProcesses()" class="btn"><i class="fa-solid fa-rotate"></i> <span data-lang="btn_refresh">Làm mới</span></button>
                 </div>
-                <table class="file-table" style="margin-top:15px;">
-                    <thead><tr><th>PID</th><th>Name</th><th>CPU %</th><th>Mem %</th><th>Action</th></tr></thead>
-                    <tbody id="proc-list"></tbody>
-                </table>
+                <table class="file-table" style="margin-top:15px;"><thead><tr><th>PID</th><th data-lang="th_name">Tên</th><th>CPU %</th><th>Mem %</th><th data-lang="th_action">Hành động</th></tr></thead><tbody id="proc-list"></tbody></table>
             </div>
         </div>
         
         <div id="tab-apps" class="tab-content hidden">
              <div class="card">
                  <div style="display:flex; justify-content:space-between;">
-                    <h3>Installed Applications</h3>
-                    <button onclick="loadApps()" class="btn"><i class="fa-solid fa-rotate"></i> Refresh</button>
+                    <h3 data-lang="app_title">Ứng dụng đã cài</h3>
+                    <button onclick="loadApps()" class="btn"><i class="fa-solid fa-rotate"></i> <span data-lang="btn_refresh">Làm mới</span></button>
                  </div>
                  <div id="app-list" style="margin-top:15px;"></div>
              </div>
@@ -164,13 +241,10 @@
         <div id="tab-screen" class="tab-content hidden">
             <div class="card" style="text-align: center;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <h3>Live Screen Monitor</h3>
-                    <button onclick="sendControl('screenshot')" class="btn"><i class="fa-solid fa-camera"></i> Capture & Save</button>
+                    <h3 data-lang="screen_title">Theo dõi màn hình</h3>
+                    <button onclick="sendControl('screenshot')" class="btn"><i class="fa-solid fa-camera"></i> <span data-lang="btn_snap">Chụp & Lưu</span></button>
                 </div>
-                <div class="video-box">
-                    <img src="/video_feed_screen" onerror="this.style.display='none'; this.parentElement.innerHTML+='<div style=\'padding:50px; color:#aaa\'>Screen Offline</div>'">
-                </div>
-                <p style="margin-top:10px; color:#888; font-size:0.9rem;">Real-time feed from remote desktop.</p>
+                <div class="video-box"><img src="/video_feed_screen" onerror="this.style.display='none'; this.parentElement.innerHTML+='<div style=\'padding:50px; color:#aaa\'>Screen Offline</div>'"></div>
             </div>
         </div>
 
@@ -181,12 +255,8 @@
                     <img src="/video_feed_webcam" onerror="this.style.display='none'; this.parentElement.innerHTML+='<div style=\'padding:50px; color:#aaa\'>Camera Offline</div>'">
                 </div>
                 <div style="margin-top: 20px; display: flex; justify-content: center; gap: 15px;">
-                    <select id="cam-seconds" style="background: rgba(255,255,255,0.1); border: 1px solid #555; color: var(--text); padding: 8px; border-radius: 8px;">
-                        <option value="5">5 Seconds</option>
-                        <option value="10">10 Seconds</option>
-                        <option value="30">30 Seconds</option>
-                    </select>
-                    <button onclick="recordWebcam()" class="btn btn-danger"><i class="fa-solid fa-circle"></i> Record</button>
+                    <select id="cam-seconds" style="background: rgba(255,255,255,0.1); border: 1px solid #555; color: var(--text); padding: 8px; border-radius: 8px;"><option value="5">5s</option><option value="10">10s</option><option value="30">30s</option></select>
+                    <button onclick="recordWebcam()" class="btn btn-danger"><i class="fa-solid fa-circle"></i> <span data-lang="btn_record">Ghi hình</span></button>
                 </div>
             </div>
         </div>
@@ -194,14 +264,14 @@
         <div id="tab-keylogger" class="tab-content hidden">
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <h3>Live Keylogs</h3>
+                    <h3 data-lang="key_title">Nhật ký phím</h3>
                     <div id="kl-status" style="font-size: 0.9rem; color: #888;">Ready</div>
                 </div>
                 <div class="keylog-window" id="keylog-content">Waiting for input...</div>
                 <div style="margin-top: 20px; display: flex; gap: 10px;">
-                    <button onclick="toggleKeylog(true)" class="btn btn-success"><i class="fa-solid fa-play"></i> Start</button>
-                    <button onclick="toggleKeylog(false)" class="btn" style="background:#f39c12"><i class="fa-solid fa-pause"></i> Stop</button>
-                    <button onclick="sendControl('keylog_clear')" class="btn btn-danger" style="margin-left: auto;"><i class="fa-solid fa-trash"></i> Clear</button>
+                    <button onclick="toggleKeylog(true)" class="btn btn-success"><i class="fa-solid fa-play"></i> <span data-lang="btn_start">Bắt đầu</span></button>
+                    <button onclick="toggleKeylog(false)" class="btn" style="background:#f39c12"><i class="fa-solid fa-pause"></i> <span data-lang="btn_stop">Dừng</span></button>
+                    <button onclick="clearLogs()" class="btn btn-danger" style="margin-left: auto;"><i class="fa-solid fa-trash"></i> <span data-lang="btn_clear">Xóa</span></button>
                 </div>
             </div>
         </div>
@@ -210,11 +280,11 @@
             <div style="display: flex; justify-content: center; align-items: center; height: 60vh;">
                 <div class="card" style="text-align: center; padding: 50px; border: 2px solid var(--danger);">
                     <i class="fa-solid fa-power-off" style="font-size: 4rem; color: var(--danger); margin-bottom: 20px;"></i>
-                    <h2>System Power Control</h2>
-                    <p style="color: #888; margin-bottom: 30px;">Be careful! These actions affect the physical machine.</p>
+                    <h2 data-lang="pwr_title">Điều khiển Nguồn</h2>
+                    <p style="color: #888; margin-bottom: 30px;" data-lang="pwr_desc">Cẩn thận! Hành động này sẽ tắt hoặc khởi động lại máy thật.</p>
                     <div style="display: flex; gap: 20px; justify-content: center;">
-                        <button onclick="if(confirm('Reboot Server?')) sendControl('restart')" class="btn" style="background:#f39c12; padding: 12px 24px;">Restart</button>
-                        <button onclick="if(confirm('Shutdown Server?')) sendControl('shutdown')" class="btn btn-danger" style="padding: 12px 24px;">Shutdown</button>
+                        <button onclick="if(confirm('Reboot?')) sendControl('restart')" class="btn" style="background:#f39c12; padding: 12px 24px;">Restart</button>
+                        <button onclick="if(confirm('Shutdown?')) sendControl('shutdown')" class="btn btn-danger" style="padding: 12px 24px;">Shutdown</button>
                     </div>
                 </div>
             </div>
@@ -224,33 +294,101 @@
 
     <div id="settingsModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:99; justify-content:center; align-items:center;">
         <div class="card" style="width:350px; text-align:center;">
-            <h2>Connection</h2>
+            <h2 data-lang="set_title">Kết nối</h2>
             <input id="in-ip" placeholder="IP" style="width:100%; padding:10px; margin:10px 0; border-radius:8px; border:1px solid #555; background:#333; color:#fff;">
             <input id="in-port" placeholder="Port" style="width:100%; padding:10px; margin:10px 0; border-radius:8px; border:1px solid #555; background:#333; color:#fff;">
-            <button onclick="saveSettings()" class="btn">Connect</button>
-            <button onclick="document.getElementById('settingsModal').style.display='none'" class="btn btn-danger">Close</button>
+            <button onclick="saveSettings()" class="btn" data-lang="btn_connect">Kết nối</button>
+            <button onclick="document.getElementById('settingsModal').style.display='none'" class="btn btn-danger" data-lang="btn_close">Đóng</button>
         </div>
     </div>
 
     <div id="toast"></div>
 
     <script>
+        // --- TRANSLATION DATA ---
+        const translations = {
+            vi: {
+                home: "Trang chủ", apps: "Ứng dụng", tasks: "Tác vụ", files: "Tệp tin", term: "Lệnh", view: "Xem", cam: "Cam", keys: "Phím", pwr: "Nguồn",
+                mode: "Chế độ", set: "Cài đặt", lang_btn: "Ngôn ngữ", connected: "Đã kết nối",
+                info_title: "Thông Tin Đồ Án", info_subj: "Môn học:", info_subj_val: "Mạng máy tính",
+                info_fac: "Khoa:", info_fac_val: "Công nghệ Thông tin - Đại học Khoa học Tự nhiên, ĐHQG-HCM",
+                info_desc: "Mô tả:", info_desc_val: "Hệ thống điều khiển từ xa qua TCP. Quản lý Process, App, File, Terminal, Keylogger, Webcam, Remote Desktop.",
+                info_mem: "Thành viên thực hiện:",
+                res_title: "Tài nguyên thời gian thực", feat_title: "Tất cả chức năng",
+                sc_screen: "Màn hình", sc_webcam: "Webcam", sc_keylog: "Nhật ký", sc_apps: "Ứng dụng", sc_tasks: "Tác vụ", sc_files: "Tệp tin", sc_term: "Lệnh", sc_snap: "Chụp ảnh", sc_power: "Nguồn",
+                th_name: "Tên", th_size: "Kích thước", th_action: "Hành động",
+                proc_title: "Tiến trình hàng đầu", app_title: "Ứng dụng đã cài",
+                screen_title: "Theo dõi màn hình",
+                btn_snap: "Chụp & Lưu", btn_record: "Ghi hình", btn_refresh: "Làm mới", btn_start: "Bắt đầu", btn_stop: "Dừng", btn_clear: "Xóa",
+                key_title: "Nhật ký phím",
+                pwr_title: "Điều khiển Nguồn", pwr_desc: "Cẩn thận! Hành động này sẽ tắt hoặc khởi động lại máy thật.",
+                set_title: "Cài đặt kết nối", btn_connect: "Kết nối", btn_close: "Đóng"
+            },
+            en: {
+                home: "Home", apps: "Apps", tasks: "Tasks", files: "Files", term: "Term", view: "View", cam: "Cam", keys: "Keys", pwr: "Power",
+                mode: "Mode", set: "Setup", lang_btn: "Language", connected: "Connected",
+                info_title: "Project Info", info_subj: "Subject:", info_subj_val: "Computer Networks",
+                info_fac: "Faculty:", info_fac_val: "Information Technology - HCMUS-VNU",
+                info_desc: "Desc:", info_desc_val: "Remote Control System via TCP. Features: Process, App, File, Terminal, Keylogger, Webcam, Remote Desktop.",
+                info_mem: "Team Members:",
+                res_title: "Real-time Resources", feat_title: "All Features",
+                sc_screen: "Screen", sc_webcam: "Webcam", sc_keylog: "Keylog", sc_apps: "Apps", sc_tasks: "Tasks", sc_files: "Files", sc_term: "Term", sc_snap: "Snap", sc_power: "Power",
+                th_name: "Name", th_size: "Size", th_action: "Action",
+                proc_title: "Top Processes", app_title: "Installed Apps",
+                screen_title: "Screen Monitor",
+                btn_snap: "Capture", btn_record: "Record", btn_refresh: "Refresh", btn_start: "Start", btn_stop: "Stop", btn_clear: "Clear",
+                key_title: "Live Keylogs",
+                pwr_title: "Power Control", pwr_desc: "Warning! These actions affect the physical machine.",
+                set_title: "Connection Settings", btn_connect: "Connect", btn_close: "Close"
+            }
+        };
+
+        let currentLang = localStorage.getItem('lang') || 'vi';
+
+        function toggleLang() {
+            currentLang = currentLang === 'vi' ? 'en' : 'vi';
+            localStorage.setItem('lang', currentLang);
+            updateText();
+        }
+
+        function updateText() {
+            const data = translations[currentLang];
+            document.querySelectorAll('[data-lang]').forEach(el => {
+                const key = el.getAttribute('data-lang');
+                if (data[key]) el.textContent = data[key];
+            });
+        }
+
+        updateText();
+
         // --- TABS LOGIC ---
         function showTab(id) {
             document.querySelectorAll('.tab-content').forEach(e => e.classList.add('hidden'));
             document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
-            
             const target = document.getElementById('tab-' + id);
             if(target) target.classList.remove('hidden');
-            
             const navLink = document.querySelector(`.sidebar a[href="#${id}"]`) || document.getElementById('nav-home');
             if(navLink) navLink.classList.add('active');
-
+            
             document.getElementById('page-title').textContent = id.toUpperCase();
+            
+            // --- CẬP NHẬT MỚI: Tự động xóa nội dung Keylog khi mở tab ---
+            if(id === 'keylogger') {
+                // Gọi hàm này để vừa xóa UI vừa báo Server xóa file log cũ
+                clearLogs();
+            }
             
             if(id === 'files') loadFiles('.');
             if(id === 'processes') loadProcesses();
             if(id === 'apps') loadApps();
+        }
+
+        // --- HÀM XÓA KEYLOG NGAY LẬP TỨC (UI + SERVER) ---
+        function clearLogs() {
+            // Xóa ngay lập tức trên giao diện, không cần đợi server
+            document.getElementById('keylog-content').textContent = 'Waiting for input...';
+            // Gửi lệnh xóa ngầm cho server
+            sendControl('keylog_clear');
         }
 
         // --- CHART JS ---
@@ -307,49 +445,29 @@
         }, 1000);
 
         // --- FILE EXPLORER ---
-        let currentPathSeparator = "/"; // Mặc định, sẽ tự update
+        let currentPathSeparator = "/";
 
         function loadFiles(path) {
             document.getElementById('file-list').innerHTML = '<tr><td colspan="3"><div class="skeleton"></div><div class="skeleton"></div></td></tr>';
-            
-            fetch('/api/files/list', { 
-                method:'POST', 
-                headers:{'Content-Type':'application/json'}, 
-                body:JSON.stringify({path}) 
-            })
+            fetch('/api/files/list', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({path}) })
             .then(r=>r.json()).then(d => {
-                if(d.error) {
-                    alert(d.error);
-                    return;
-                }
-                
-                // Cập nhật ô nhập đường dẫn
+                if(d.error) { alert(d.error); return; }
                 const pathInput = document.getElementById('path-input');
                 pathInput.value = d.current_path;
-                
-                // Tự động phát hiện dấu phân cách đường dẫn (\ cho Windows, / cho Mac/Linux)
-                if (d.current_path.includes("\\")) currentPathSeparator = "\\";
-                else currentPathSeparator = "/";
-
+                if (d.current_path.includes("\\")) currentPathSeparator = "\\"; else currentPathSeparator = "/";
                 let html = '';
                 d.items.forEach(i => {
                     const icon = i.type === 'folder' ? '<i class="fa-solid fa-folder file-icon" style="color:#fbc02d"></i>' : '<i class="fa-solid fa-file file-icon"></i>';
-                    
-                    // Xử lý dấu gạch chéo cho đúng cú pháp JSON khi gọi hàm
                     const safePath = i.path.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-                    
                     const action = i.type === 'folder' 
                         ? `<button onclick="loadFiles('${safePath}')" class="btn" style="padding:4px 8px;">Open</button>`
                         : `<a href="/api/files/download?path=${encodeURIComponent(i.path)}" class="btn" style="padding:4px 8px; background:#30d158;"><i class="fa-solid fa-download"></i></a>`;
-                    
-                    // Format dung lượng file
                     let sizeStr = '-';
                     if (i.type === 'file') {
                         if (i.size < 1024) sizeStr = i.size + ' B';
                         else if (i.size < 1024*1024) sizeStr = (i.size/1024).toFixed(1) + ' KB';
                         else sizeStr = (i.size/(1024*1024)).toFixed(1) + ' MB';
                     }
-
                     html += `<tr class="file-item"><td>${icon} ${i.name}</td><td style="color:#888; font-size:0.9rem">${sizeStr}</td><td>${action}</td></tr>`;
                 });
                 document.getElementById('file-list').innerHTML = html;
@@ -358,29 +476,19 @@
 
         function goUp() {
             const current = document.getElementById('path-input').value;
-            // Tìm vị trí dấu phân cách cuối cùng để cắt chuỗi
             const lastIndex = current.lastIndexOf(currentPathSeparator);
-            
             if (lastIndex > 0) {
-                // Cắt bỏ phần cuối (Về cha)
                 let parent = current.substring(0, lastIndex);
-                // Nếu cắt xong mà rỗng hoặc có dạng "C:", thêm dấu gạch chéo để thành "C:\" (Root)
                 if (parent.length === 2 && parent.includes(":")) parent += "\\"; 
-                if (parent === "") parent = "/"; // Root cho Linux/Mac
-                
+                if (parent === "") parent = "/"; 
                 loadFiles(parent);
-            } else {
-                // Nếu đang ở Root, thử về Root cứng
-                loadFiles(currentPathSeparator === "\\" ? "C:\\" : "/");
-            }
+            } else { loadFiles(currentPathSeparator === "\\" ? "C:\\" : "/"); }
         }
 
-        // Bắt sự kiện Enter trong ô nhập đường dẫn
         document.getElementById('path-input').addEventListener("keypress", function(event) {
-            if (event.key === "Enter") {
-                loadFiles(this.value);
-            }
+            if (event.key === "Enter") { loadFiles(this.value); }
         });
+
         // --- TERMINAL ---
         const termIn = document.getElementById('term-in');
         termIn.addEventListener('keypress', function (e) {
@@ -396,72 +504,48 @@
             }
         });
 
-        // --- PROCESSES ---
+        // --- PROCESSES & APPS & COMMON ---
         function loadProcesses() {
             const list = document.getElementById('proc-list');
             list.innerHTML = Array(5).fill('<tr><td colspan="5"><div class="skeleton"></div></td></tr>').join('');
             fetch('/api/processes').then(r=>r.json()).then(data => {
                 let html = '';
                 data.forEach(p => {
-                    html += `<tr>
-                        <td style="color:var(--accent)">${p.pid}</td>
-                        <td>${p.name}</td>
-                        <td style="color:#ff3b30; font-weight:bold;">${p.cpu_percent}%</td>
-                        <td>${p.memory_percent.toFixed(1)}%</td>
-                        <td><button onclick="killProc(${p.pid})" class="btn btn-danger" style="padding:2px 8px; font-size:0.8rem;">Kill</button></td>
-                    </tr>`;
+                    html += `<tr><td style="color:var(--accent)">${p.pid}</td><td>${p.name}</td><td style="color:#ff3b30; font-weight:bold;">${p.cpu_percent}%</td><td>${p.memory_percent.toFixed(1)}%</td><td><button onclick="killProc(${p.pid})" class="btn btn-danger" style="padding:2px 8px; font-size:0.8rem;">Kill</button></td></tr>`;
                 });
                 list.innerHTML = html;
             });
         }
         function killProc(pid) {
-            if(confirm('Kill ' + pid + '?')) sendControl('kill_process', null, {pid});
+            if(confirm('Kill ' + pid + '?')) {
+                fetch('/control', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({action: 'kill_process', pid: pid})})
+                .then(r => r.json()).then(d => { if(d.status === 'ok') { showToast("Success"); loadProcesses(); } else alert(d.message); });
+            }
         }
-
-        // --- APPS ---
         function loadApps() {
              document.getElementById('app-list').innerHTML = '<div class="skeleton"></div><div class="skeleton"></div>';
              fetch('/api/apps').then(r=>r.json()).then(apps => {
                  let html = '';
                  for(const [k,v] of Object.entries(apps)) {
-                     html += `<div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #333;">
-                        <span>${v.name}</span>
-                        <div>
-                            <button onclick="ctrlApp('start','${k}')" class="btn" ${v.running?'disabled':''} style="background:#30d158; opacity:${v.running?0.3:1}">Start</button>
-                            <button onclick="ctrlApp('stop','${k}')" class="btn btn-danger" ${!v.running?'disabled':''} style="opacity:${!v.running?0.3:1}">Stop</button>
-                        </div>
-                     </div>`;
+                     html += `<div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #333;"><span>${v.name}</span><div><button onclick="ctrlApp('start','${k}')" class="btn" ${v.running?'disabled':''} style="background:#30d158; opacity:${v.running?0.3:1}">Start</button><button onclick="ctrlApp('stop','${k}')" class="btn btn-danger" ${!v.running?'disabled':''} style="opacity:${!v.running?0.3:1}">Stop</button></div></div>`;
                  }
                  document.getElementById('app-list').innerHTML = html;
              });
         }
         function ctrlApp(act, app) { sendControl(act, app); setTimeout(loadApps, 1500); }
-
-        // --- COMMON ---
-        function sendControl(action, appKey = null, extraData = {}) {
-            const payload = { action: action };
-            if (appKey) payload.app = appKey;
-            Object.assign(payload, extraData);
-            fetch('/control', {
-                method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)
-            }).then(r => r.json()).then(data => {
-                if (data.status === 'ok') showToast(data.message, 'success');
-                else showToast(data.message, 'error');
-            }).catch(() => showToast("Failed", 'error'));
+        function sendControl(action, appKey=null, extraData={}) {
+            const payload = { action: action }; if (appKey) payload.app = appKey; Object.assign(payload, extraData);
+            fetch('/control', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) })
+            .then(r => r.json()).then(data => { if (data.status === 'ok') showToast(data.message, 'success'); else showToast(data.message, 'error'); })
+            .catch(() => showToast("Failed", 'error'));
         }
-
         function showToast(msg, type='success') {
-            const t = document.getElementById('toast');
-            t.textContent = msg;
-            t.style.transform = "translate(-50%, 30px)";
-            setTimeout(() => t.style.transform = "translate(-50%, -100px)", 3000);
+            const t = document.getElementById('toast'); t.textContent = msg;
+            t.style.transform = "translate(-50%, 30px)"; setTimeout(() => t.style.transform = "translate(-50%, -100px)", 3000);
         }
-
-        // --- SETTINGS & THEME ---
         function openSettings() { document.getElementById('settingsModal').style.display='flex'; fetch('/api/config_info').then(r=>r.json()).then(d=>{ document.getElementById('in-ip').value=d.ip; document.getElementById('in-port').value=d.port; }); }
         function saveSettings() {
-            const ip = document.getElementById('in-ip').value;
-            const port = document.getElementById('in-port').value;
+            const ip = document.getElementById('in-ip').value; const port = document.getElementById('in-port').value;
             fetch('/api/configure', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ip, port})}).then(()=>{ document.getElementById('settingsModal').style.display='none'; location.reload(); });
         }
         function toggleTheme() {
@@ -470,9 +554,7 @@
         }
         if(localStorage.getItem('theme')==='light') document.body.setAttribute('data-theme','light');
 
-        // Init
         showTab('home');
-        
     </script>
 </body>
 </html>
