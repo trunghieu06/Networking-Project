@@ -288,9 +288,14 @@ def handle_client(conn, addr):
                  conn.sendall(res.encode())
              return
         elif command == "list_apps":
-            # Running status check might be inaccurate on Windows due to shortcuts
-            conn.sendall(json.dumps({k: {"name": k, "running": False} for k in APPS.keys()}).encode()); return
-
+            # SỬA LỖI: Kiểm tra thực tế trạng thái running thay vì luôn trả về False
+            status = {}
+            for k, v in APPS.items():
+                # Lấy tên file thực thi từ đường dẫn (nếu có) hoặc dùng tên định danh
+                app_name = os.path.basename(v) if os.path.isabs(v) else v
+                status[k] = {"name": k, "running": is_app_running(app_name)}
+            
+            conn.sendall(json.dumps(status).encode()); return
         # --- SYSTEM ---
         elif command == "sys_stats": conn.sendall(get_sys_stats().encode()); return
         elif command == "list_processes_json": conn.sendall(get_process_json().encode()); return
